@@ -1,0 +1,92 @@
+from uuid import UUID
+
+from app.enums.models.hospitalization_action_type_enums import HospitalizationActionType
+from app.enums.models.hospitalization_status_enums import HospitalizationStatus
+from app.modules.hospitalization.dtos.hospitalization_action.create_hospitalization_action import (
+    CreateHospitalizationAction,
+)
+from app.modules.hospitalization.dtos.responses.hospitalization_action.hospitalization_action_response import (
+    HospitalizationActionResponse,
+)
+from app.modules.hospitalization.mappers.hospitalization_action_mapper import (
+    HospitalizationActionMapper,
+)
+from app.modules.hospitalization.repositories.hospitalization_action_attachment_repository import (
+    HospitalizationActionAttachmentRepository,
+)
+from app.modules.hospitalization.repositories.hospitalization_action_repository import (
+    HospitalizationActionRepository,
+)
+from app.modules.hospitalization.repositories.hospitalization_action_sbar_repository import (
+    HospitalizationActionSbarRepository,
+)
+from app.modules.hospitalization.repositories.hospitalization_repository import (
+    HospitalizationRepository,
+)
+from app.modules.hospitalization.services.hospitalization_actions_attachment.save_hospitalization_attachment import (
+    SaveHospitalizationAttachment,
+)
+
+
+class CreateHospitalizationActionUseCase:
+    def __init__(
+        self,
+        hospitalization_action_repository: HospitalizationActionRepository,
+        hospitalization_action_attachment_repository: HospitalizationActionAttachmentRepository,
+        hospitalization_action_sbar_repository: HospitalizationActionSbarRepository,
+        hospitalization_repository: HospitalizationRepository,
+        save_hospitalization_attachment: SaveHospitalizationAttachment,
+        mapper: HospitalizationActionMapper,
+    ) -> None:
+        self.hospitalization_action_repository = hospitalization_action_repository
+        self.hospitalization_action_attachment_repository = (
+            hospitalization_action_attachment_repository
+        )
+        self.hospitalization_action_sbar_repository = (
+            hospitalization_action_sbar_repository
+        )
+        self.hospitalization_repository = hospitalization_repository
+        self.save_hospitalization_attachment = save_hospitalization_attachment
+        self.mapper = mapper
+
+    def handle(
+        self,
+        hospitalization_action_data: CreateHospitalizationAction,
+    ) -> HospitalizationActionResponse:
+        entity = self.mapper.to_entity(hospitalization_action_data)
+        hospitalization_action = self.hospitalization_action_repository.create(entity)
+        if hospitalization_action.type in {
+            HospitalizationActionType.HOSPITALIZATION_DISCHARGE,
+            HospitalizationActionType.HOSPITALIZATION_DECEASED,
+        }:
+            self.__close_hospitalization(
+                hospitalization_action.type, hospitalization_action.hospitalization_id
+            )
+        if hospitalization_action_data.files:
+            self.save_hospitalization_attachment.save_files(
+                hospitalization_action, hospitalization_action_data.files
+            )
+        if hospitalization_action_data.has_sbar_payload():
+            self.hospitalization_action_sbar_repository.upsert(
+                self.mapper.to_sbar_entity(
+                    hospitalization_action.id, hospitalization_action_data
+                )
+            )
+        hospitalization_action = self.hospitalization_action_repository.find_by_id(
+            hospitalization_action.id
+        )
+        return self.mapper.to_response(hospitalization_action)
+
+    def __close_hospitalization(
+        self, status: HospitalizationActionType, hospitalization_id: UUID
+    ) -> None:
+        hospitalization = self.hospitalization_repository.get(hospitalization_id)
+        if not hospitalization:
+            return
+
+        mapped_status = {
+            HospitalizationActionType.HOSPITALIZATION_DISCHARGE: HospitalizationStatus.DISCHARGED,
+            HospitalizationActionType.HOSPITALIZATION_DECEASED: HospitalizationStatus.DECEASED,
+        }
+        hospitalization.status = mapped_status[status]
+        self.hospitalization_repository.save(hospitalization)

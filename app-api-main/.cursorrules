@@ -1,0 +1,215 @@
+# Strivium API - Cursor Rules
+
+## Arquitetura Geral
+
+Este projeto segue uma arquitetura modular baseada em Clean Architecture com injeção de dependência usando FastAPI. Siga estritamente os padrões estabelecidos.
+
+## Estrutura de Módulos
+
+Cada módulo deve seguir esta estrutura:
+```
+modules/{module_name}/
+├── __init__.py
+├── controllers/
+│   └── {module_name}_controller.py
+├── di/
+│   ├── repositories.py
+│   ├── services.py
+│   └── use_cases.py
+├── dtos/
+│   ├── requests/
+│   │   └── {entity}/
+│   └── responses/
+│       └── {entity}/
+├── exceptions/
+├── interfaces/
+│   └── repositories/
+├── mappers/
+├── repositories/
+├── routes.py
+├── services/
+├── tests/
+└── use_cases/
+    └── {entity}/
+```
+
+## Padrões Obrigatórios
+
+### 1. Base Model
+- Sempre herde de `app.concerns.base_model.BaseModel` para DTOs de resposta
+- Use `pydantic.BaseModel` para DTOs de request
+- Implemente `to_json()` quando necessário
+
+### 2. Injeção de Dependência
+- Use `Annotated` e `Depends` do FastAPI
+- Crie funções de injeção em arquivos `di/` separados:
+  - `di/repositories.py` - para repositories
+  - `di/services.py` - para services
+  - `di/use_cases.py` - para use cases
+- Sempre use interfaces para repositories
+
+### 3. Controllers
+- Mantenha controllers simples, apenas orquestrando use cases
+- Use `JSONResponse` para respostas
+- Inclua status codes apropriados
+- Documente responses com modelos
+
+### 4. Use Cases
+- Implemente lógica de negócio em use cases
+- Use cases devem receber dependências via construtor
+- Método principal deve ser `handle()`
+- Retorne DTOs de resposta
+
+### 5. Services
+- Services para operações de domínio
+- Recebem repositories via construtor
+- Implementam regras de negócio específicas
+
+### 6. Repositories
+- Sempre implemente interfaces
+- Use SQLModel para queries
+- Implemente métodos CRUD básicos
+- Use `Session` do SQLModel
+
+### 7. Mappers
+- Crie mappers para conversão entre entidades e DTOs
+- Use métodos estáticos `to_entity()` e `to_response()`
+- Mantenha lógica de transformação centralizada
+
+### 8. DTOs
+- Requests: herdem de `pydantic.BaseModel`
+- Responses: herdem de `app.concerns.base_model.BaseModel`
+- Use `Field` para documentação
+- Inclua exemplos e descrições
+
+### 9. Exceptions
+- Crie exceptions específicas por módulo
+- Herdem de `ClientAwareError` quando apropriado
+- Use mensagens em português
+
+### 10. Routes
+- Use `APIRouter` com prefix e tags
+- Documente responses com modelos
+- Inclua tratamento de exceções
+
+## Convenções de Nomenclatura
+
+- **Controllers**: `{entity}_controller.py`
+- **Use Cases**: `{action}_{entity}_use_case.py`
+- **Services**: `{entity}_service.py`
+- **Repositories**: `{entity}_repository.py`
+- **Interfaces**: `{entity}_repository.py` (em interfaces/repositories/)
+- **Mappers**: `{entity}_mapper.py`
+- **DTOs**: `{action}_{entity}_{request/response}_dto.py`
+
+## Padrões de Código
+
+### Imports
+```python
+# Standard library
+from typing import Annotated
+from uuid import UUID
+
+# Third party
+from fastapi import Depends, status
+from fastapi.responses import JSONResponse
+from sqlmodel import Session, select
+
+# Local imports
+from app.concerns.base_model import BaseModel
+from app.modules.{module}.dtos.requests.{entity}.{dto} import {DTO}
+```
+
+### Injeção de Dependência
+```python
+def get_{entity}_repository(
+    db: Annotated[Session, Depends(get_session)],
+) -> {Entity}Repository:
+    return {Entity}Repository(db)
+
+def get_{entity}_use_case(
+    repository: Annotated[{Entity}Repository, Depends(get_{entity}_repository)],
+) -> {Action}{Entity}UseCase:
+    return {Action}{Entity}UseCase(repository)
+```
+
+### Controller Pattern
+```python
+def {action}_{entity}(
+    data: {Action}{Entity}RequestDTO,
+    use_case: Annotated[{Action}{Entity}UseCase, Depends(get_{action}_{entity}_use_case)],
+) -> JSONResponse:
+    result = use_case.handle(data)
+    return JSONResponse(result.to_json(), status_code=status.HTTP_200_OK)
+```
+
+### Use Case Pattern
+```python
+class {Action}{Entity}UseCase:
+    def __init__(self, repository: {Entity}Repository) -> None:
+        self.repository = repository
+
+    def handle(self, data: {Action}{Entity}RequestDTO) -> {Action}{Entity}ResponseDTO:
+        # Business logic here
+        pass
+```
+
+### Repository Pattern
+```python
+class {Entity}Repository({Entity}RepositoryInterface):
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def save(self, entity: {Entity}) -> {Entity}:
+        self.session.add(entity)
+        self.session.commit()
+        self.session.refresh(entity)
+        return entity
+```
+
+## Configuração de Módulos
+
+- Registre novos módulos em `app/routes.py`
+- Use variáveis de ambiente para habilitar/desabilitar módulos
+- Mantenha prefixos consistentes: `/api/v1`
+
+## Testes
+
+- Organize testes por feature
+- Use fixtures do pytest
+- Teste controllers, use cases e repositories separadamente
+- Mantenha estrutura: `tests/feature/controllers/`
+
+## Exceções
+
+- Crie exceptions específicas por domínio
+- Use mensagens descritivas em português
+- Registre handlers globais em `main.py`
+
+## Documentação
+
+- Use docstrings em português
+- Documente DTOs com `Field` e exemplos
+- Mantenha OpenAPI docs atualizados
+- Use tags apropriados para agrupamento
+
+## Segurança
+
+- Use middleware de autenticação
+- Implemente validação de tokens JWT
+- Use bcrypt para senhas
+- Valide inputs com Pydantic
+
+## Performance
+
+- Use lazy loading para relacionamentos
+- Implemente paginação quando necessário
+- Use índices apropriados no banco
+- Otimize queries com SQLModel
+
+## Manutenibilidade
+
+- Mantenha responsabilidades separadas
+- Use interfaces para desacoplamento
+- Implemente logging apropriado
+- Siga princípios SOLID

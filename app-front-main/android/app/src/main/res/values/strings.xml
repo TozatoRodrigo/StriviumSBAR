@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Strivium Link</string>
+    <string name="title_activity_main">Strivium Link</string>
+    <string name="package_name">br.com.strivium.link</string>
+    <string name="custom_url_scheme">br.com.strivium.link</string>
+</resources>

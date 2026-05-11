@@ -1,0 +1,4 @@
+User-Agent: *
+Allow: /
+
+Sitemap: https://link.strivium.com.br/sitemap.xml

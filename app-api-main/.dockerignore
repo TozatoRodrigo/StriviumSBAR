@@ -1,0 +1,12 @@
+__pycache__
+venv
+.ruff_cache
+.env
+.env.example
+.gitignore
+.python-version
+Dockerfile.local
+README.md
+ruff.toml
+docker-compose.yaml
+tests/

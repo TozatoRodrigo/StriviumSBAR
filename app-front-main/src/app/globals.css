@@ -1,0 +1,40 @@
+@layer theme, base, mui, components, utilities;
+@import 'tailwindcss';
+
+:root {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --font-sans: 'Roboto', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+}
+
+/* TODO: reenable */
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+  }
+} */
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    transition: background-color 0.3s, color 0.3s;
+  }
+}
+
+@layer components {
+  .dark body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
+
+@layer mui {
+  :root {
+    --mui-palette-background-default: var(--color-background);
+    --mui-palette-text-primary: var(--color-foreground);
+  }
+}

@@ -1,0 +1,10 @@
+FROM python:3.13-alpine
+WORKDIR /app
+
+ADD ./ /app
+
+RUN pip install --upgrade pip
+RUN pip install poetry
+RUN poetry install --no-root
+
+ENTRYPOINT ["poetry", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

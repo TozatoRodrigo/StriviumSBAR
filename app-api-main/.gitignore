@@ -1,0 +1,9 @@
+__pycache__
+venv
+.env
+.ruff_cache
+.python-version
+.pytest_cache
+test.sqlite
+htmlcov/
+.coverage

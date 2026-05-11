@@ -1,0 +1,39 @@
+networks:
+  strivium_api:
+    external: false
+
+volumes:
+  db_data:
+
+services:
+  api:
+    container_name: strivium-api
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    working_dir: /app
+    restart: always
+    ports:
+      - "55000:8000"
+    networks:
+      - strivium_api
+    volumes:
+      - "./:/app"
+
+  db:
+    container_name: strivium-db
+    image: postgres:16-alpine
+    restart: always
+    env_file:
+      - ".env"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "55001:5432"
+    volumes:
+      - "db_data:/var/lib/postgresql/data"
+    networks:
+      - strivium_api
+
