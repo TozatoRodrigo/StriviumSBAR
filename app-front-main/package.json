@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "info": "next info",
     "sync": "npx cap sync",
-    "test": "echo TODO implement tests",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "android": "LOCAL_IP=$(ip route get 1.1.1.1 | awk '{print $7; exit}') npx cap run android",
     "android:build": "npx cap build android",
     "ios": "npx cap  run ios",
@@ -48,14 +49,22 @@
   "devDependencies": {
     "@capacitor/cli": "^7.4.2",
     "@eslint/eslintrc": "^3",
+    "@rollup/rollup-darwin-arm64": "^4.60.3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.3.0",
     "critters": "^0.0.25",
     "eslint": "^9.37.0",
     "eslint-config-next": "15.3.2",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.0"
   }
 }

@@ -1,10 +1,7 @@
 'use client'
 
-import { Box, Chip, FormHelperText, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import { Box, Chip, FormHelperText, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
 import { useMemo, useState, type ReactNode } from 'react'
-import { useAudioRecorder } from '@/hooks/useAudioRecorder'
-import { AudioControllers } from './AudioControllers'
-import { AudioPreview } from './AudioPreview'
 import { ImagesPreview } from './ImagesPreview'
 import { InputImage } from './InputImage'
 import { Controller, useForm } from 'react-hook-form'
@@ -17,6 +14,8 @@ import {
 import { EvolutionFormData, EvolutionSchema } from '@/validations/evolution'
 import { EvolutionSbar, Media } from '@/hooks/queries/evolutions'
 import { useResetOnDataChange } from '@/hooks/useResetOnDataChange'
+import { isExperimentalSbarVoiceDictationEnabled } from '@/constants/featureFlags'
+import { VoiceDictationButton } from '@/components/VoiceDictationButton'
 
 type EvolutionFormInitialData = Partial<EvolutionFormData> & {
   description?: string
@@ -30,6 +29,8 @@ type EvolutionFormProps = {
   submitAction: (payload: FormData) => void
   isPending: boolean
 }
+
+type SbarVoiceFieldName = 'situation' | 'background' | 'assessment' | 'recommendation' | 'pending_items' | 'alerts'
 
 const id = 'evolution-form'
 
@@ -98,8 +99,8 @@ export const EvolutionForm = ({
   isPending,
   initialData,
 }: EvolutionFormProps) => {
-  const { isRecording, audioBlob, audioURL, startRecording, stopRecording, resetRecording } = useAudioRecorder()
   const normalizedInitialData = useMemo(() => normalizeInitialData(initialData), [initialData])
+  const voiceDictationEnabled = isExperimentalSbarVoiceDictationEnabled()
   const [images, setImages] = useState<File[]>([])
   const [existingImages, setExistingImages] = useState<Media[]>(
     initialData?.medias?.filter(m => m.type === 'photo') ?? []
@@ -118,7 +119,9 @@ export const EvolutionForm = ({
     register,
     handleSubmit,
     control,
+    getValues,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<EvolutionFormData>({
     resolver: zodResolver(EvolutionSchema),
@@ -140,10 +143,6 @@ export const EvolutionForm = ({
     appendIfFilled(formData, 'sbar_pending_items', data.pending_items)
     appendIfFilled(formData, 'sbar_alerts', data.alerts)
 
-    if (audioBlob) {
-      formData.append('files', audioBlob, 'recording.webm')
-    }
-
     images.forEach(file => {
       formData.append('files', file)
     })
@@ -154,6 +153,33 @@ export const EvolutionForm = ({
       })
     }
     submitAction(formData)
+  }
+
+  const appendTranscriptToField = (fieldName: SbarVoiceFieldName, transcript: string) => {
+    const currentValue = getValues(fieldName)?.trim()
+    const transcriptValue = transcript.trim()
+    const nextValue = currentValue ? `${currentValue} ${transcriptValue}` : transcriptValue
+
+    setValue(fieldName, nextValue, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+  }
+
+  const voiceAdornment = (fieldName: SbarVoiceFieldName, fieldLabel: string) => {
+    if (!voiceDictationEnabled) return undefined
+
+    return {
+      endAdornment: (
+        <InputAdornment position="end" sx={{ alignSelf: 'flex-start', mt: 1 }}>
+          <VoiceDictationButton
+            disabled={isPending}
+            fieldLabel={fieldLabel}
+            onTranscript={transcript => appendTranscriptToField(fieldName, transcript)}
+          />
+        </InputAdornment>
+      ),
+    }
   }
 
   useResetOnDataChange(normalizedInitialData, reset)
@@ -179,6 +205,11 @@ export const EvolutionForm = ({
               <Chip label="Visita médica" size="small" color="primary" variant="outlined" />
               <Chip label="SBAR estruturado" size="small" color="info" variant="outlined" />
             </Stack>
+            {voiceDictationEnabled && (
+              <Typography fontSize={12} color="text.secondary" sx={{ mt: 1 }}>
+                Ditado usa recurso do navegador; o Strivium não armazena áudio.
+              </Typography>
+            )}
           </Box>
 
           <Section title="S - Situação" subtitle="O que está acontecendo com o paciente agora.">
@@ -191,6 +222,7 @@ export const EvolutionForm = ({
               {...register('situation')}
               error={!!errors.situation}
               helperText={errors.situation?.message}
+              InputProps={voiceAdornment('situation', 'Situação atual')}
               disabled={isPending}
             />
             <Controller
@@ -239,6 +271,7 @@ export const EvolutionForm = ({
               {...register('background')}
               error={!!errors.background}
               helperText={errors.background?.message}
+              InputProps={voiceAdornment('background', 'Contexto clínico relevante')}
               disabled={isPending}
             />
           </Section>
@@ -253,6 +286,7 @@ export const EvolutionForm = ({
               {...register('assessment')}
               error={!!errors.assessment}
               helperText={errors.assessment?.message}
+              InputProps={voiceAdornment('assessment', 'Avaliação clínica')}
               disabled={isPending}
             />
             <Controller
@@ -291,6 +325,7 @@ export const EvolutionForm = ({
               {...register('recommendation')}
               error={!!errors.recommendation}
               helperText={errors.recommendation?.message}
+              InputProps={voiceAdornment('recommendation', 'Plano e conduta')}
               disabled={isPending}
             />
             <TextField
@@ -302,6 +337,7 @@ export const EvolutionForm = ({
               {...register('pending_items')}
               error={!!errors.pending_items}
               helperText={errors.pending_items?.message}
+              InputProps={voiceAdornment('pending_items', 'Pendências para a equipe')}
               disabled={isPending}
             />
             <TextField
@@ -313,31 +349,17 @@ export const EvolutionForm = ({
               {...register('alerts')}
               error={!!errors.alerts}
               helperText={errors.alerts?.message}
+              InputProps={voiceAdornment('alerts', 'Alertas para o próximo médico')}
               disabled={isPending}
             />
           </Section>
 
           <Section title="Anexos" subtitle="Adicione fotos ou documentos úteis para complementar a visita.">
             <InputImage onAddImage={(files: File[]) => setImages(prev => [...prev, ...files])} disabled={isPending} />
-
-            {
-              /* TODO[v1]: enable */
-              !!0 && (
-                <AudioControllers
-                  isRecording={isRecording}
-                  startRecording={startRecording}
-                  stopRecording={stopRecording}
-                  resetRecording={resetRecording}
-                  hasBlob={!!audioBlob}
-                  disabled={isPending}
-                />
-              )
-            }
           </Section>
         </Stack>
       </Box>
 
-      {audioURL && <AudioPreview audioURL={audioURL} />}
       {(!!images.length || !!existingImages.length) && (
         <ImagesPreview
           images={[...existingImages, ...images]}
