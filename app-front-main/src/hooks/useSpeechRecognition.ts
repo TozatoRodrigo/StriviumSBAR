@@ -30,7 +30,7 @@ const mapSpeechRecognitionError = (error?: string) => {
   }
 
   if (error === 'network') {
-    return 'Falha de conexão no ditado do navegador.'
+    return 'Ditado indisponível: verifique sua conexão com a internet. O Chrome usa servidores do Google para reconhecimento de fala.'
   }
 
   return DEFAULT_ERROR_MESSAGE
@@ -43,8 +43,11 @@ export const useSpeechRecognition = ({
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const [status, setStatus] = useState<SpeechRecognitionStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSupported, setIsSupported] = useState(false)
 
-  const isSupported = Boolean(getSpeechRecognitionConstructor())
+  useEffect(() => {
+    setIsSupported(Boolean(getSpeechRecognitionConstructor()))
+  }, [])
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop()
@@ -65,7 +68,7 @@ export const useSpeechRecognition = ({
 
     const recognition = new Recognition()
     recognition.continuous = false
-    recognition.interimResults = false
+    recognition.interimResults = true
     recognition.lang = lang
 
     recognition.onstart = () => {
@@ -74,11 +77,14 @@ export const useSpeechRecognition = ({
     }
 
     recognition.onresult = event => {
-      const transcript = Array.from({ length: event.results.length })
-        .map((_, index) => event.results[index]?.[0]?.transcript)
-        .filter(Boolean)
-        .join(' ')
-        .trim()
+      let transcript = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        if (result.isFinal) {
+          transcript += result[0]?.transcript ?? ''
+        }
+      }
+      transcript = transcript.trim()
 
       if (!transcript) return
 

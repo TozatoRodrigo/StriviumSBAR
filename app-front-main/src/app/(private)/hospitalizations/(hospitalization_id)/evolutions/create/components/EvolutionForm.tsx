@@ -167,18 +167,22 @@ export const EvolutionForm = ({
   }
 
   const voiceAdornment = (fieldName: SbarVoiceFieldName, fieldLabel: string) => {
-    if (!voiceDictationEnabled) return undefined
+    if (!voiceDictationEnabled) return {}
 
     return {
-      endAdornment: (
-        <InputAdornment position="end" sx={{ alignSelf: 'flex-start', mt: 1 }}>
-          <VoiceDictationButton
-            disabled={isPending}
-            fieldLabel={fieldLabel}
-            onTranscript={transcript => appendTranscriptToField(fieldName, transcript)}
-          />
-        </InputAdornment>
-      ),
+      slotProps: {
+        input: {
+          endAdornment: (
+            <InputAdornment position="end" sx={{ alignSelf: 'flex-start', mt: 1 }}>
+              <VoiceDictationButton
+                disabled={isPending}
+                fieldLabel={fieldLabel}
+                onTranscript={transcript => appendTranscriptToField(fieldName, transcript)}
+              />
+            </InputAdornment>
+          ),
+        },
+      },
     }
   }
 
@@ -214,6 +218,7 @@ export const EvolutionForm = ({
 
           <Section title="S - Situação" subtitle="O que está acontecendo com o paciente agora.">
             <TextField
+              id="field-situation"
               multiline
               minRows={3}
               variant="filled"
@@ -222,7 +227,7 @@ export const EvolutionForm = ({
               {...register('situation')}
               error={!!errors.situation}
               helperText={errors.situation?.message}
-              InputProps={voiceAdornment('situation', 'Situação atual')}
+              {...voiceAdornment('situation', 'Situação atual')}
               disabled={isPending}
             />
             <Controller
@@ -263,6 +268,7 @@ export const EvolutionForm = ({
 
           <Section title="B - Contexto" subtitle="Informações que explicam a internação e ajudam o próximo médico.">
             <TextField
+              id="field-background"
               multiline
               minRows={3}
               variant="filled"
@@ -271,13 +277,14 @@ export const EvolutionForm = ({
               {...register('background')}
               error={!!errors.background}
               helperText={errors.background?.message}
-              InputProps={voiceAdornment('background', 'Contexto clínico relevante')}
+              {...voiceAdornment('background', 'Contexto clínico relevante')}
               disabled={isPending}
             />
           </Section>
 
           <Section title="A - Avaliação" subtitle="Sua interpretação clínica e o que mudou desde a última visita.">
             <TextField
+              id="field-assessment"
               multiline
               minRows={3}
               variant="filled"
@@ -286,7 +293,7 @@ export const EvolutionForm = ({
               {...register('assessment')}
               error={!!errors.assessment}
               helperText={errors.assessment?.message}
-              InputProps={voiceAdornment('assessment', 'Avaliação clínica')}
+              {...voiceAdornment('assessment', 'Avaliação clínica')}
               disabled={isPending}
             />
             <Controller
@@ -317,6 +324,7 @@ export const EvolutionForm = ({
 
           <Section title="R - Recomendação / Plano" subtitle="Conduta, próximos passos e pontos de atenção para continuidade do cuidado.">
             <TextField
+              id="field-recommendation"
               multiline
               minRows={3}
               variant="filled"
@@ -325,10 +333,11 @@ export const EvolutionForm = ({
               {...register('recommendation')}
               error={!!errors.recommendation}
               helperText={errors.recommendation?.message}
-              InputProps={voiceAdornment('recommendation', 'Plano e conduta')}
+              {...voiceAdornment('recommendation', 'Plano e conduta')}
               disabled={isPending}
             />
             <TextField
+              id="field-pending-items"
               multiline
               minRows={2}
               variant="filled"
@@ -337,10 +346,11 @@ export const EvolutionForm = ({
               {...register('pending_items')}
               error={!!errors.pending_items}
               helperText={errors.pending_items?.message}
-              InputProps={voiceAdornment('pending_items', 'Pendências para a equipe')}
+              {...voiceAdornment('pending_items', 'Pendências para a equipe')}
               disabled={isPending}
             />
             <TextField
+              id="field-alerts"
               multiline
               minRows={2}
               variant="filled"
@@ -349,7 +359,7 @@ export const EvolutionForm = ({
               {...register('alerts')}
               error={!!errors.alerts}
               helperText={errors.alerts?.message}
-              InputProps={voiceAdornment('alerts', 'Alertas para o próximo médico')}
+              {...voiceAdornment('alerts', 'Alertas para o próximo médico')}
               disabled={isPending}
             />
           </Section>
