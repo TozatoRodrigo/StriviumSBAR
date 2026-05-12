@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 import { Fade, FormControl, FormHelperText, Stack, TextField, Typography } from '@mui/material'
 import Image from 'next/image'
 
-import { Quicksand } from 'next/font/google'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { AccountFormData, AccountFormDataInput, AccountFormDataOutput, AccountSchema } from '@/validations/account'
@@ -18,10 +17,6 @@ import { useSnackbar } from 'notistack'
 import { BottomBar } from '@/components/BottomBar'
 import Link from 'next/link'
 import { Turnstile } from '@/components/Turnstile'
-
-const font = Quicksand({
-  subsets: ['latin'],
-})
 
 export default function Signup() {
   const { handleSubmit, control, setValue } = useForm<AccountFormDataInput, object, AccountFormDataOutput>({
@@ -62,7 +57,7 @@ export default function Signup() {
       <Stack gap={2} pt={4}>
         <Image className="self-center" src="/logo.svg" alt="Strivium logo" unoptimized width={67.82} height={80} />
         <Stack alignItems="center">
-          <Typography component="h1" className={`font-bold text-[#020617] text-xl ${font.className}`}>
+          <Typography component="h1" className="font-bold text-[#020617] text-xl">
             Cadastrar sua conta
           </Typography>
           <Typography variant="subtitle2" className="font-normal text-[#64748B]">

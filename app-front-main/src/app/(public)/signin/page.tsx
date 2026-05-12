@@ -7,7 +7,6 @@ import AccountCircle from '@mui/icons-material/AccountCircle'
 import Lock from '@mui/icons-material/Lock'
 import Image from 'next/image'
 
-import { Quicksand } from 'next/font/google'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { LoginFormData, LoginSchema } from '@/validations/login'
@@ -15,10 +14,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import { InputPassword } from '@/components/InputPassword'
 import { Turnstile } from '@/components/Turnstile'
-
-const font = Quicksand({
-  subsets: ['latin'],
-})
 
 const Signin = () => {
   const {
@@ -56,7 +51,7 @@ const Signin = () => {
           fetchPriority="high"
         />
         <Stack alignItems="center">
-          <Typography component="h1" className={`font-bold text-[#020617] text-xl ${font.className}`}>
+          <Typography component="h1" className="font-bold text-[#020617] text-xl">
             Acesse sua conta
           </Typography>
           <Typography variant="subtitle2" className="font-normal text-[#64748B]">
@@ -122,7 +117,7 @@ const Signin = () => {
               Esqueci minha senha
             </Button>
             <Divider>
-              <Typography sx={{ alignSelf: 'center' }} className={`font-semibold text-[#020617] ${font.className}`}>
+              <Typography sx={{ alignSelf: 'center' }} className="font-semibold text-[#020617]">
                 ou
               </Typography>
             </Divider>
