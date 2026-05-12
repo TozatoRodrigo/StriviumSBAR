@@ -89,7 +89,7 @@ describe('EvolutionForm voice dictation', () => {
 
     render(<EvolutionForm isPending={false} submitAction={vi.fn()} initialData={requiredInitialData} />)
 
-    expect(screen.getAllByRole('button', { name: /Ditar por voz/ })).toHaveLength(6)
+    expect(screen.getAllByRole('button', { name: /Ditar por voz/ })).toHaveLength(7)
   })
 
   it('appends the transcript to the selected field without replacing existing text', async () => {

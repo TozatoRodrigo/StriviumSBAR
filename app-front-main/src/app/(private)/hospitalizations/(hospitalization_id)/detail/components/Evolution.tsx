@@ -168,7 +168,8 @@ const SbarPreview = ({ sbar }: { sbar: EvolutionSbar }) => (
     <SbarField label="Situação" value={sbar.situation} />
     <SbarField label="Contexto" value={sbar.background} />
     <SbarField label="Avaliação" value={sbar.assessment} />
-    <SbarField label="Plano" value={sbar.recommendation} />
+    <SbarField label="Recomendação" value={sbar.recommendation} />
+    <SbarField label="Plano" value={sbar.plan} />
     <SbarField label="Pendências" value={sbar.pending_items} />
     <SbarField label="Alertas" value={sbar.alerts} />
   </Stack>

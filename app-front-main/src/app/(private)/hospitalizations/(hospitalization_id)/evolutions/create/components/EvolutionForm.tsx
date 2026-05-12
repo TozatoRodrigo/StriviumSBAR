@@ -1,6 +1,18 @@
 'use client'
 
-import { Box, Chip, FormHelperText, InputAdornment, MenuItem, Stack, TextField, Typography } from '@mui/material'
+import {
+  Alert,
+  Box,
+  Checkbox,
+  Chip,
+  FormControlLabel,
+  FormHelperText,
+  InputAdornment,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material'
 import { useMemo, useState, type ReactNode } from 'react'
 import { ImagesPreview } from './ImagesPreview'
 import { InputImage } from './InputImage'
@@ -14,8 +26,13 @@ import {
 import { EvolutionFormData, EvolutionSchema } from '@/validations/evolution'
 import { EvolutionSbar, Media } from '@/hooks/queries/evolutions'
 import { useResetOnDataChange } from '@/hooks/useResetOnDataChange'
-import { isExperimentalSbarVoiceDictationEnabled } from '@/constants/featureFlags'
+import {
+  isExperimentalSbarAiDictationEnabled,
+  isExperimentalSbarVoiceDictationEnabled,
+} from '@/constants/featureFlags'
 import { VoiceDictationButton } from '@/components/VoiceDictationButton'
+import type { SbarConfidence, SbarExtractResponse } from '@/hooks/mutations/sbar'
+import { SbarDictationPanel } from './SbarDictationPanel'
 
 type EvolutionFormInitialData = Partial<EvolutionFormData> & {
   description?: string
@@ -25,12 +42,31 @@ type EvolutionFormInitialData = Partial<EvolutionFormData> & {
 
 type EvolutionFormProps = {
   formId?: string
+  hospitalizationId?: string
   initialData?: EvolutionFormInitialData
   submitAction: (payload: FormData) => void
   isPending: boolean
 }
 
-type SbarVoiceFieldName = 'situation' | 'background' | 'assessment' | 'recommendation' | 'pending_items' | 'alerts'
+type SbarVoiceFieldName =
+  | 'situation'
+  | 'background'
+  | 'assessment'
+  | 'recommendation'
+  | 'plan'
+  | 'pending_items'
+  | 'alerts'
+
+type SbarAiFieldName = 'situation' | 'background' | 'assessment' | 'recommendation' | 'plan'
+
+type AiDraftState = {
+  confidence: SbarConfidence
+  generated: boolean
+  missingInformation: string[]
+  reviewConfirmed: boolean
+  sourceTranscript: string
+  warnings: string[]
+}
 
 const id = 'evolution-form'
 
@@ -40,6 +76,7 @@ const normalizeInitialData = (initialData?: EvolutionFormInitialData): Evolution
   background: initialData?.background ?? initialData?.sbar?.background ?? '',
   assessment: initialData?.assessment ?? initialData?.sbar?.assessment ?? '',
   recommendation: initialData?.recommendation ?? initialData?.sbar?.recommendation ?? '',
+  plan: initialData?.plan ?? initialData?.sbar?.plan ?? '',
   priority: initialData?.priority ?? initialData?.sbar?.priority ?? 'routine',
   clinical_course: initialData?.clinical_course ?? initialData?.sbar?.clinical_course ?? '',
   pending_items: initialData?.pending_items ?? initialData?.sbar?.pending_items ?? '',
@@ -59,7 +96,8 @@ const buildSbarDescription = (data: EvolutionFormData) =>
     `Situação: ${data.situation.trim()}`,
     data.background?.trim() ? `Contexto: ${data.background.trim()}` : null,
     `Avaliação: ${data.assessment.trim()}`,
-    `Plano: ${data.recommendation.trim()}`,
+    `Recomendação: ${data.recommendation.trim()}`,
+    data.plan?.trim() ? `Plano: ${data.plan.trim()}` : null,
     data.pending_items?.trim() ? `Pendências: ${data.pending_items.trim()}` : null,
     data.alerts?.trim() ? `Alertas: ${data.alerts.trim()}` : null,
   ]
@@ -95,17 +133,21 @@ const Section = ({ title, subtitle, children }: { title: string; subtitle: strin
 
 export const EvolutionForm = ({
   formId = id,
+  hospitalizationId,
   submitAction,
   isPending,
   initialData,
 }: EvolutionFormProps) => {
   const normalizedInitialData = useMemo(() => normalizeInitialData(initialData), [initialData])
   const voiceDictationEnabled = isExperimentalSbarVoiceDictationEnabled()
+  const aiDictationEnabled = isExperimentalSbarAiDictationEnabled()
   const [images, setImages] = useState<File[]>([])
   const [existingImages, setExistingImages] = useState<Media[]>(
     initialData?.medias?.filter(m => m.type === 'photo') ?? []
   )
   const [removedImages, setRemovedImages] = useState<string[]>([])
+  const [aiDraft, setAiDraft] = useState<AiDraftState | null>(null)
+  const [aiReviewError, setAiReviewError] = useState(false)
 
   const handleRemoveNew = (indexToRemove: number) => {
     setImages(prev => prev.filter((_, index) => index !== indexToRemove))
@@ -129,6 +171,11 @@ export const EvolutionForm = ({
   })
 
   const onSubmit = async (data: EvolutionFormData) => {
+    if (aiDraft?.generated && !aiDraft.reviewConfirmed) {
+      setAiReviewError(true)
+      return
+    }
+
     const formData = new FormData()
     const description = buildSbarDescription(data)
 
@@ -138,10 +185,20 @@ export const EvolutionForm = ({
     appendIfFilled(formData, 'sbar_background', data.background)
     formData.append('sbar_assessment', data.assessment.trim())
     formData.append('sbar_recommendation', data.recommendation.trim())
+    appendIfFilled(formData, 'sbar_plan', data.plan)
     formData.append('sbar_priority', data.priority)
     appendIfFilled(formData, 'sbar_clinical_course', data.clinical_course)
     appendIfFilled(formData, 'sbar_pending_items', data.pending_items)
     appendIfFilled(formData, 'sbar_alerts', data.alerts)
+
+    if (aiDraft?.generated) {
+      formData.append('sbar_source_transcript', aiDraft.sourceTranscript)
+      formData.append('sbar_ai_generated', String(aiDraft.generated))
+      formData.append('sbar_ai_review_confirmed', String(aiDraft.reviewConfirmed))
+      formData.append('sbar_ai_warnings', JSON.stringify(aiDraft.warnings))
+      formData.append('sbar_ai_missing_information', JSON.stringify(aiDraft.missingInformation))
+      formData.append('sbar_ai_confidence', JSON.stringify(aiDraft.confidence))
+    }
 
     images.forEach(file => {
       formData.append('files', file)
@@ -164,6 +221,33 @@ export const EvolutionForm = ({
       shouldDirty: true,
       shouldValidate: true,
     })
+  }
+
+  const applyAiDraft = (result: SbarExtractResponse, sourceTranscript: string) => {
+    const fields: Array<[SbarAiFieldName, string]> = [
+      ['situation', result.situation],
+      ['background', result.background],
+      ['assessment', result.assessment],
+      ['recommendation', result.recommendation],
+      ['plan', result.plan],
+    ]
+
+    fields.forEach(([fieldName, value]) => {
+      setValue(fieldName, value, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+    })
+
+    setAiDraft({
+      confidence: result.confidence,
+      generated: true,
+      missingInformation: result.missing_information,
+      reviewConfirmed: false,
+      sourceTranscript,
+      warnings: result.warnings,
+    })
+    setAiReviewError(false)
   }
 
   const voiceAdornment = (fieldName: SbarVoiceFieldName, fieldLabel: string) => {
@@ -215,6 +299,42 @@ export const EvolutionForm = ({
               </Typography>
             )}
           </Box>
+
+          {aiDictationEnabled && (
+            <SbarDictationPanel
+              disabled={isPending}
+              hospitalizationId={hospitalizationId}
+              onApply={applyAiDraft}
+            />
+          )}
+
+          {aiDraft?.generated && (
+            <Alert severity={aiReviewError ? 'error' : 'warning'}>
+              <Stack gap={1}>
+                <Typography fontSize={14} fontWeight={600}>
+                  Rascunho gerado automaticamente. Revise todos os campos antes de salvar.
+                </Typography>
+                {aiReviewError && (
+                  <Typography fontSize={13}>Confirme a revisão médica antes de salvar.</Typography>
+                )}
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={aiDraft.reviewConfirmed}
+                      disabled={isPending}
+                      onChange={event => {
+                        setAiDraft(current =>
+                          current ? { ...current, reviewConfirmed: event.target.checked } : current
+                        )
+                        setAiReviewError(false)
+                      }}
+                    />
+                  }
+                  label="Revisei e confirmo o rascunho gerado pela IA"
+                />
+              </Stack>
+            </Alert>
+          )}
 
           <Section title="S - Situação" subtitle="O que está acontecendo com o paciente agora.">
             <TextField
@@ -328,12 +448,25 @@ export const EvolutionForm = ({
               multiline
               minRows={3}
               variant="filled"
-              label="Plano e conduta"
+              label="Recomendação"
               placeholder="Ex.: Manter antibiótico, fisioterapia respiratória, solicitar PCR amanhã e reavaliar oxigênio."
               {...register('recommendation')}
               error={!!errors.recommendation}
               helperText={errors.recommendation?.message}
-              {...voiceAdornment('recommendation', 'Plano e conduta')}
+              {...voiceAdornment('recommendation', 'Recomendação')}
+              disabled={isPending}
+            />
+            <TextField
+              id="field-plan"
+              multiline
+              minRows={2}
+              variant="filled"
+              label="Plano"
+              placeholder="Ex.: Reavaliar amanhã com exames de controle e resposta clínica."
+              {...register('plan')}
+              error={!!errors.plan}
+              helperText={errors.plan?.message}
+              {...voiceAdornment('plan', 'Plano')}
               disabled={isPending}
             />
             <TextField

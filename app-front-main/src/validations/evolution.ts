@@ -28,6 +28,7 @@ export const EvolutionSchema = z.object({
     })
     .trim()
     .min(5, 'Plano deve ter pelo menos 5 caracteres'),
+  plan: optionalText,
   priority: z.enum(
     priorityOptions.map(({ id }) => id),
     { error: 'Selecione o nível de atenção' }

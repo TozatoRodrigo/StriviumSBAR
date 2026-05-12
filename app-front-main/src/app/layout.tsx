@@ -2,7 +2,6 @@
 
 import '@/lib/i18n'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
-import { Roboto } from 'next/font/google'
 import './globals.css'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -15,10 +14,6 @@ import { WorkspaceTokenProvider } from '@/contexts/WorkspaceTokenContext'
 import { WorkspaceProvider } from '@/contexts/WorkspaceContext'
 import { createTheme, ThemeProvider } from '@mui/material'
 import { PwaInstallProvider } from '@/components/PwaInstallProvider'
-
-const roboto = Roboto({
-  subsets: ['latin'],
-})
 
 const theme = createTheme({
   colorSchemes: {
@@ -40,10 +35,11 @@ export default function RootLayout({
   }, [])
 
   return (
-    <html lang="pt_BR" className={roboto.className}>
+    <html lang="pt_BR">
       <head>
         <title>Strivium - Link</title>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
       </head>
       <body className={`antialiased`}>
         <div className="container mx-auto max-w-5xl h-[100dvh]">

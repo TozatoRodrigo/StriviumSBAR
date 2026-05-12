@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 type UseSpeechRecognitionParams = {
+  continuous?: boolean
+  interimResults?: boolean
   lang?: string
+  onInterimTranscript?: (transcript: string) => void
   onTranscript: (transcript: string) => void
 }
 
@@ -37,13 +40,17 @@ const mapSpeechRecognitionError = (error?: string) => {
 }
 
 export const useSpeechRecognition = ({
+  continuous = false,
+  interimResults = true,
   lang = 'pt-BR',
+  onInterimTranscript,
   onTranscript,
 }: UseSpeechRecognitionParams) => {
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const [status, setStatus] = useState<SpeechRecognitionStatus>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSupported, setIsSupported] = useState(false)
+  const [interimTranscript, setInterimTranscript] = useState('')
 
   useEffect(() => {
     setIsSupported(Boolean(getSpeechRecognitionConstructor()))
@@ -52,6 +59,7 @@ export const useSpeechRecognition = ({
   const stop = useCallback(() => {
     recognitionRef.current?.stop()
     recognitionRef.current = null
+    setInterimTranscript('')
     setStatus('idle')
   }, [])
 
@@ -67,30 +75,40 @@ export const useSpeechRecognition = ({
     recognitionRef.current?.abort()
 
     const recognition = new Recognition()
-    recognition.continuous = false
-    recognition.interimResults = true
+    recognition.continuous = continuous
+    recognition.interimResults = interimResults
     recognition.lang = lang
 
     recognition.onstart = () => {
       setErrorMessage(null)
+      setInterimTranscript('')
       setStatus('listening')
     }
 
     recognition.onresult = event => {
       let transcript = ''
+      let interim = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
         if (result.isFinal) {
           transcript += result[0]?.transcript ?? ''
+        } else {
+          interim += result[0]?.transcript ?? ''
         }
       }
       transcript = transcript.trim()
+      interim = interim.trim()
 
-      if (!transcript) return
+      setInterimTranscript(interim)
+      onInterimTranscript?.(interim)
+
+      if (!transcript) {
+        return
+      }
 
       setStatus('transcribing')
       onTranscript(transcript)
-      setStatus('idle')
+      setStatus(continuous ? 'listening' : 'idle')
     }
 
     recognition.onerror = event => {
@@ -109,18 +127,20 @@ export const useSpeechRecognition = ({
 
     recognitionRef.current = recognition
     recognition.start()
-  }, [lang, onTranscript])
+  }, [continuous, interimResults, lang, onInterimTranscript, onTranscript])
 
   useEffect(
     () => () => {
       recognitionRef.current?.abort()
       recognitionRef.current = null
+      setInterimTranscript('')
     },
     []
   )
 
   return {
     errorMessage,
+    interimTranscript,
     isSupported,
     start,
     status,

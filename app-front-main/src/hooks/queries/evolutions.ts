@@ -17,10 +17,17 @@ export type EvolutionSbar = {
   background: string | null
   assessment: string
   recommendation: string
+  plan: string | null
   priority: EvolutionSbarPriority
   clinical_course: EvolutionSbarClinicalCourse | null
   pending_items: string | null
   alerts: string | null
+  source_transcript: string | null
+  ai_generated: boolean
+  ai_review_confirmed: boolean
+  ai_warnings: string[] | null
+  ai_missing_information: string[] | null
+  ai_confidence: Record<string, number> | null
   created_at: string
   updated_at: string
 }
