@@ -78,6 +78,71 @@ def test_create_hospitalization_action_with_sbar_should_return_201_when_valid() 
     assert response_data["sbar"]["alerts"] == data["sbar_alerts"]
 
 
+def test_create_hospitalization_action_with_ai_sbar_requires_review_confirmation() -> None:
+    hospitalization = create_hospitalization()
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": hospitalization.tenant_id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+    data = {
+        "description": "SBAR gerado por ditado.",
+        "action_type": HospitalizationActionType.HOSPITALIZATION_VISIT.value,
+        "sbar_situation": "Paciente sem febre.",
+        "sbar_assessment": "Evolução estável.",
+        "sbar_recommendation": "Manter conduta.",
+        "sbar_priority": "routine",
+        "sbar_source_transcript": "paciente sem febre evolução estável manter conduta",
+        "sbar_ai_generated": "true",
+    }
+
+    response = client.post(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions",
+        headers=headers,
+        data=data,
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_create_hospitalization_action_with_confirmed_ai_sbar_persists_audit_metadata() -> None:
+    hospitalization = create_hospitalization()
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": hospitalization.tenant_id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+    data = {
+        "description": "SBAR gerado por ditado e revisado.",
+        "action_type": HospitalizationActionType.HOSPITALIZATION_VISIT.value,
+        "sbar_situation": "Paciente sem febre.",
+        "sbar_assessment": "Evolução estável.",
+        "sbar_recommendation": "Manter conduta.",
+        "sbar_plan": "Reavaliar amanhã.",
+        "sbar_priority": "routine",
+        "sbar_source_transcript": "paciente sem febre evolução estável manter conduta reavaliar amanhã",
+        "sbar_ai_generated": "true",
+        "sbar_ai_review_confirmed": "true",
+        "sbar_ai_warnings": '["Revisar dose do antibiótico."]',
+        "sbar_ai_missing_information": '["Sinais vitais completos."]',
+        "sbar_ai_confidence": '{"situation":0.9,"background":0,"assessment":0.8,"recommendation":0.7,"plan":0.7}',
+    }
+
+    response = client.post(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions",
+        headers=headers,
+        data=data,
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    response_data = response.json()
+    assert response_data["sbar"]["plan"] == data["sbar_plan"]
+    assert response_data["sbar"]["source_transcript"] == data["sbar_source_transcript"]
+    assert response_data["sbar"]["ai_generated"] is True
+    assert response_data["sbar"]["ai_review_confirmed"] is True
+    assert response_data["sbar"]["ai_warnings"] == ["Revisar dose do antibiótico."]
+    assert response_data["sbar"]["ai_missing_information"] == ["Sinais vitais completos."]
+    assert response_data["sbar"]["ai_confidence"]["situation"] == 0.9
+
+
 def test_update_hospitalization_action_should_return_200_when_valid() -> None:
     hospitalization_action = create_hospitalization_action()
     tenant_access_token = create_tenant_access_token(

@@ -50,6 +50,11 @@ class Environment(BaseSettings):
     TURNSTILE_ENABLED: bool = True
     CLOUDFLARE_TURNSTILE_SECRET: str = ""
 
+    SBAR_AI_ENABLED: bool = False
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2:3b"
+    OLLAMA_TIMEOUT_SECONDS: float = 30
+
 
 envs = Environment()
 

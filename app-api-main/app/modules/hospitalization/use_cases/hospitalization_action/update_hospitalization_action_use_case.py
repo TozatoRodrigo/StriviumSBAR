@@ -1,5 +1,8 @@
 from uuid import UUID
 
+from fastapi import status
+
+from app.exceptions.client_aware_error import ClientAwareError
 from app.modules.hospitalization.dtos.hospitalization_action.update_hospitalization_action import (
     UpdateHospitalizationAction,
 )
@@ -22,6 +25,11 @@ from app.modules.hospitalization.services.hospitalization_actions_attachment.sav
     SaveHospitalizationAttachment,
 )
 
+AI_REVIEW_REQUIRED_MESSAGE = "Rascunho SBAR gerado por IA exige revisão médica"
+AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE = (
+    "Transcrição bruta é obrigatória para SBAR gerado por IA"
+)
+
 
 class UpdateHospitalizationActionUseCase:
     def __init__(
@@ -41,6 +49,7 @@ class UpdateHospitalizationActionUseCase:
     def handle(
         self, hospitalization_action_id: UUID, data: UpdateHospitalizationAction
     ) -> HospitalizationActionResponse:
+        self.__validate_ai_review(data)
         hospitalization_action = self.repository.find_by_id(hospitalization_action_id)
         if hospitalization_action is None:
             raise HospitalizationActionNotFoundError(hospitalization_action_id)
@@ -63,3 +72,18 @@ class UpdateHospitalizationActionUseCase:
             hospitalization_action.id
         )
         return self.mapper.to_response(updated_hospitalization_action)
+
+    @staticmethod
+    def __validate_ai_review(data: UpdateHospitalizationAction) -> None:
+        if not data.sbar_ai_generated:
+            return
+        if not data.sbar_ai_review_confirmed:
+            raise ClientAwareError(
+                AI_REVIEW_REQUIRED_MESSAGE,
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        if not data.sbar_source_transcript:
+            raise ClientAwareError(
+                AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE,
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )

@@ -40,6 +40,11 @@ if not envs.APP_MODULE or envs.APP_MODULE == "hospitalization_action":
 
     router.include_router(hospitalization_action_router)
 
+if not envs.APP_MODULE or envs.APP_MODULE == "sbar":
+    from .modules.sbar.routes import router as sbar_router
+
+    router.include_router(sbar_router)
+
 if not envs.APP_MODULE or envs.APP_MODULE == "tenant_user":
     from .modules.tenant_user.routers import router as tenant_user_router
 
