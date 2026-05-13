@@ -8,11 +8,16 @@ import {
   FormControlLabel,
   FormHelperText,
   InputAdornment,
+  LinearProgress,
   MenuItem,
   Stack,
   TextField,
   Typography,
 } from '@mui/material'
+import AssignmentTurnedInOutlinedIcon from '@mui/icons-material/AssignmentTurnedInOutlined'
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
+import FactCheckOutlinedIcon from '@mui/icons-material/FactCheckOutlined'
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
 import { useMemo, useState, type ReactNode } from 'react'
 import { ImagesPreview } from './ImagesPreview'
 import { InputImage } from './InputImage'
@@ -110,26 +115,78 @@ const priorityColor = {
   critical: 'error',
 } as const
 
-const Section = ({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) => (
+type SectionProps = {
+  accent?: 'primary' | 'info' | 'success' | 'warning' | 'error'
+  aiGenerated?: boolean
+  children: ReactNode
+  complete?: boolean
+  letter: string
+  subtitle: string
+  title: string
+}
+
+const Section = ({
+  accent = 'primary',
+  aiGenerated = false,
+  children,
+  complete = false,
+  letter,
+  subtitle,
+  title,
+}: SectionProps) => (
   <Box
     sx={{
       border: theme => `1px solid ${theme.palette.divider}`,
       borderRadius: 2,
-      p: { xs: 2, sm: 2.5 },
       bgcolor: 'background.paper',
+      overflow: 'hidden',
     }}
   >
-    <Box sx={{ mb: 2 }}>
-      <Typography fontWeight={700} color="text.primary">
-        {title}
-      </Typography>
-      <Typography fontSize={13} color="text.secondary">
-        {subtitle}
-      </Typography>
-    </Box>
-    <Stack gap={2}>{children}</Stack>
+    <Stack direction="row" alignItems="stretch">
+      <Box sx={{ width: 5, bgcolor: `${accent}.main`, flexShrink: 0 }} />
+      <Box sx={{ flex: 1, minWidth: 0, p: { xs: 2, sm: 2.5 } }}>
+        <Stack direction="row" justifyContent="space-between" gap={1.5} alignItems="flex-start" sx={{ mb: 2 }}>
+          <Stack direction="row" gap={1.25} alignItems="flex-start" sx={{ minWidth: 0 }}>
+            <Box
+              sx={{
+                alignItems: 'center',
+                bgcolor: `${accent}.main`,
+                borderRadius: 1.25,
+                color: `${accent}.contrastText`,
+                display: 'flex',
+                flexShrink: 0,
+                fontSize: 14,
+                fontWeight: 900,
+                height: 34,
+                justifyContent: 'center',
+                width: 34,
+              }}
+            >
+              {letter}
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography fontWeight={800} color="text.primary">
+                {title}
+              </Typography>
+              <Typography fontSize={13} color="text.secondary">
+                {subtitle}
+              </Typography>
+            </Box>
+          </Stack>
+          <Stack direction="row" gap={0.75} flexWrap="wrap" justifyContent="flex-end">
+            {aiGenerated && <Chip label="Rascunho IA" size="small" color="warning" variant="outlined" />}
+            <Chip label={complete ? 'Preenchido' : 'Pendente'} size="small" color={complete ? 'success' : 'default'} variant={complete ? 'filled' : 'outlined'} />
+          </Stack>
+        </Stack>
+        <Stack gap={2}>{children}</Stack>
+      </Box>
+    </Stack>
   </Box>
 )
+
+const confidencePercent = (value?: number) => `${Math.round((value ?? 0) * 100)}%`
+
+const hasText = (value?: string | null) => Boolean(value?.trim())
 
 export const EvolutionForm = ({
   formId = id,
@@ -164,11 +221,27 @@ export const EvolutionForm = ({
     getValues,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<EvolutionFormData>({
     resolver: zodResolver(EvolutionSchema),
     defaultValues: normalizedInitialData,
   })
+
+  const watchedFields = watch()
+  const requiredCompleted = [
+    hasText(watchedFields.situation),
+    hasText(watchedFields.assessment),
+    hasText(watchedFields.recommendation),
+  ].filter(Boolean).length
+  const optionalCompleted = [
+    hasText(watchedFields.background),
+    hasText(watchedFields.plan),
+    hasText(watchedFields.pending_items),
+    hasText(watchedFields.alerts),
+  ].filter(Boolean).length
+  const completionPercent = Math.round(((requiredCompleted + optionalCompleted) / 7) * 100)
+  const reviewReady = !aiDraft?.generated || aiDraft.reviewConfirmed
 
   const onSubmit = async (data: EvolutionFormData) => {
     if (aiDraft?.generated && !aiDraft.reviewConfirmed) {
@@ -281,18 +354,41 @@ export const EvolutionForm = ({
       component="form"
       encType="multipart/form-data"
       onSubmit={handleSubmit(onSubmit)}
-      sx={{ overflowY: 'auto', pb: 3 }}
+      sx={{ bgcolor: 'grey.50', overflowY: 'auto', pb: 3 }}
     >
-      <Box sx={{ maxWidth: 980, width: '100%', mx: 'auto' }}>
+      <Box sx={{ maxWidth: 1180, width: '100%', mx: 'auto' }}>
         <Stack gap={2.5}>
-          <Box>
-            <Typography fontSize={13} color="text.secondary">
-              Use o SBAR para registrar uma visita objetiva, fácil de continuar no próximo plantão.
-            </Typography>
-            <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>
-              <Chip label="Visita médica" size="small" color="primary" variant="outlined" />
-              <Chip label="SBAR estruturado" size="small" color="info" variant="outlined" />
+          <Box
+            sx={{
+              bgcolor: 'background.paper',
+              border: theme => `1px solid ${theme.palette.divider}`,
+              borderRadius: 2,
+              p: { xs: 2, sm: 2.5 },
+            }}
+          >
+            <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={2}>
+              <Box>
+                <Typography fontSize={12} fontWeight={800} color="primary.main" sx={{ letterSpacing: 0.4, textTransform: 'uppercase' }}>
+                  Visita hospitalar
+                </Typography>
+                <Typography fontSize={{ xs: 22, sm: 26 }} fontWeight={900} color="text.primary">
+                  Registrar evolução em SBAR
+                </Typography>
+                <Typography fontSize={13} color="text.secondary" sx={{ mt: 0.5, maxWidth: 680 }}>
+                  Dite livremente, revise o texto bruto e salve somente depois de confirmar o rascunho clínico.
+                </Typography>
+              </Box>
+              <Stack direction="row" gap={1} flexWrap="wrap" alignItems="flex-start">
+                <Chip icon={<AssignmentTurnedInOutlinedIcon />} label={`${completionPercent}% preenchido`} size="small" color={completionPercent >= 70 ? 'success' : 'default'} variant={completionPercent >= 70 ? 'filled' : 'outlined'} />
+                <Chip icon={<FactCheckOutlinedIcon />} label={reviewReady ? 'Revisão ok' : 'Revisão pendente'} size="small" color={reviewReady ? 'success' : 'warning'} variant="outlined" />
+                <Chip icon={<ShieldOutlinedIcon />} label="Texto bruto auditável" size="small" color="info" variant="outlined" />
+              </Stack>
             </Stack>
+            <LinearProgress
+              value={completionPercent}
+              variant="determinate"
+              sx={{ borderRadius: 999, height: 7, mt: 2 }}
+            />
             {voiceDictationEnabled && (
               <Typography fontSize={12} color="text.secondary" sx={{ mt: 1 }}>
                 Ditado usa recurso do navegador; o Strivium não armazena áudio.
@@ -309,11 +405,42 @@ export const EvolutionForm = ({
           )}
 
           {aiDraft?.generated && (
-            <Alert severity={aiReviewError ? 'error' : 'warning'}>
-              <Stack gap={1}>
-                <Typography fontSize={14} fontWeight={600}>
-                  Rascunho gerado automaticamente. Revise todos os campos antes de salvar.
-                </Typography>
+            <Alert
+              icon={<AutoFixHighIcon fontSize="inherit" />}
+              severity={aiReviewError ? 'error' : aiDraft.reviewConfirmed ? 'success' : 'warning'}
+              sx={{
+                '& .MuiAlert-message': { width: '100%' },
+                border: theme => `1px solid ${aiReviewError ? theme.palette.error.light : theme.palette.warning.light}`,
+              }}
+            >
+              <Stack gap={1.25}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+                  <Box>
+                    <Typography fontSize={14} fontWeight={800}>
+                      Rascunho SBAR gerado automaticamente
+                    </Typography>
+                    <Typography fontSize={13}>
+                      Compare os campos com o texto bruto e confirme a revisão médica antes de salvar.
+                    </Typography>
+                  </Box>
+                  <Stack direction="row" gap={0.75} flexWrap="wrap">
+                    <Chip label={`S ${confidencePercent(aiDraft.confidence.situation)}`} size="small" />
+                    <Chip label={`B ${confidencePercent(aiDraft.confidence.background)}`} size="small" />
+                    <Chip label={`A ${confidencePercent(aiDraft.confidence.assessment)}`} size="small" />
+                    <Chip label={`R ${confidencePercent(aiDraft.confidence.recommendation)}`} size="small" />
+                    <Chip label={`P ${confidencePercent(aiDraft.confidence.plan)}`} size="small" />
+                  </Stack>
+                </Stack>
+                {!!aiDraft.warnings.length && (
+                  <Typography fontSize={13}>
+                    Atenções: {aiDraft.warnings.join(' · ')}
+                  </Typography>
+                )}
+                {!!aiDraft.missingInformation.length && (
+                  <Typography fontSize={13}>
+                    Ausentes/ambíguas: {aiDraft.missingInformation.join(' · ')}
+                  </Typography>
+                )}
                 {aiReviewError && (
                   <Typography fontSize={13}>Confirme a revisão médica antes de salvar.</Typography>
                 )}
@@ -336,7 +463,14 @@ export const EvolutionForm = ({
             </Alert>
           )}
 
-          <Section title="S - Situação" subtitle="O que está acontecendo com o paciente agora.">
+          <Section
+            accent="primary"
+            aiGenerated={aiDraft?.generated}
+            complete={hasText(watchedFields.situation)}
+            letter="S"
+            title="Situação"
+            subtitle="O que está acontecendo com o paciente agora."
+          >
             <TextField
               id="field-situation"
               multiline
@@ -386,7 +520,14 @@ export const EvolutionForm = ({
             />
           </Section>
 
-          <Section title="B - Contexto" subtitle="Informações que explicam a internação e ajudam o próximo médico.">
+          <Section
+            accent="info"
+            aiGenerated={aiDraft?.generated}
+            complete={hasText(watchedFields.background)}
+            letter="B"
+            title="Contexto"
+            subtitle="Informações que explicam a internação e ajudam o próximo médico."
+          >
             <TextField
               id="field-background"
               multiline
@@ -402,7 +543,14 @@ export const EvolutionForm = ({
             />
           </Section>
 
-          <Section title="A - Avaliação" subtitle="Sua interpretação clínica e o que mudou desde a última visita.">
+          <Section
+            accent="success"
+            aiGenerated={aiDraft?.generated}
+            complete={hasText(watchedFields.assessment)}
+            letter="A"
+            title="Avaliação"
+            subtitle="Sua interpretação clínica e o que mudou desde a última visita."
+          >
             <TextField
               id="field-assessment"
               multiline
@@ -442,7 +590,14 @@ export const EvolutionForm = ({
             />
           </Section>
 
-          <Section title="R - Recomendação / Plano" subtitle="Conduta, próximos passos e pontos de atenção para continuidade do cuidado.">
+          <Section
+            accent="warning"
+            aiGenerated={aiDraft?.generated}
+            complete={hasText(watchedFields.recommendation) || hasText(watchedFields.plan)}
+            letter="R"
+            title="Recomendação / Plano"
+            subtitle="Conduta, próximos passos e pontos de atenção para continuidade do cuidado."
+          >
             <TextField
               id="field-recommendation"
               multiline
@@ -497,7 +652,13 @@ export const EvolutionForm = ({
             />
           </Section>
 
-          <Section title="Anexos" subtitle="Adicione fotos ou documentos úteis para complementar a visita.">
+          <Section
+            accent="info"
+            complete={Boolean(images.length || existingImages.length)}
+            letter="+"
+            title="Anexos"
+            subtitle="Adicione fotos ou documentos úteis para complementar a visita."
+          >
             <InputImage onAddImage={(files: File[]) => setImages(prev => [...prev, ...files])} disabled={isPending} />
           </Section>
         </Stack>
