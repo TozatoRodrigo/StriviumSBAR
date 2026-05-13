@@ -21,6 +21,7 @@ Se uma informação não estiver presente, retorne string vazia no campo corresp
 Se houver ambiguidade, adicione em missing_information.
 Mantenha linguagem médica objetiva.
 Preserve negações clínicas como "sem febre", "nega dor", "sem dispneia".
+Use confidence como número decimal entre 0 e 1. Exemplo: 0.8, nunca 8.
 Retorne apenas JSON válido conforme o schema.
 """.strip()
 
@@ -82,7 +83,8 @@ class OllamaSbarExtractor:
             ],
             "stream": False,
             "format": SbarExtractResponse.model_json_schema(),
-            "options": {"temperature": 0},
+            "keep_alive": "30m",
+            "options": {"temperature": 0, "num_predict": 700},
         }
 
     @staticmethod
@@ -110,7 +112,24 @@ class OllamaSbarExtractor:
             message = "Ollama response does not contain JSON content"
             raise TypeError(message)
 
+        data = OllamaSbarExtractor._normalize_confidence_scale(data)
         return SbarExtractResponse.model_validate(data)
+
+    @staticmethod
+    def _normalize_confidence_scale(data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        confidence = data.get("confidence")
+        if not isinstance(confidence, dict):
+            return data
+
+        normalized_confidence = confidence.copy()
+        for field, value in confidence.items():
+            if isinstance(value, int | float) and 1 < value <= 10:
+                normalized_confidence[field] = value / 10
+
+        return {**data, "confidence": normalized_confidence}
 
 
 def get_sbar_extractor() -> OllamaSbarExtractor:
