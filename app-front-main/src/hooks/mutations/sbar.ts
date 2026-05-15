@@ -27,10 +27,17 @@ type ExtractSbarPayload = {
   }
 }
 
+export function resolveSbarExtractEndpoint(baseUrl: string | undefined): string {
+  const normalizedBaseUrl = (baseUrl || '').replace(/\/+$/, '').toLowerCase()
+  return normalizedBaseUrl.endsWith('/api') ? '/sbar/extract' : '/api/sbar/extract'
+}
+
 export function useExtractSbar() {
+  const endpoint = resolveSbarExtractEndpoint(process.env.NEXT_PUBLIC_API_URL)
+
   return useMutation<SbarExtractResponse, Error, ExtractSbarPayload>({
     mutationFn: async payload => {
-      return api.post<SbarExtractResponse>('/api/sbar/extract', payload).then(({ data }) => data)
+      return api.post<SbarExtractResponse>(endpoint, payload).then(({ data }) => data)
     },
   })
 }

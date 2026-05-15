@@ -24,4 +24,12 @@ describe('API contract smoke', () => {
     expect(queriesContent).toContain("/doctor/v1/doctors")
     expect(queriesContent).toContain("`/doctor/v1/doctors/${id}`")
   })
+
+  it('resolves SBAR endpoint without duplicating /api in production', () => {
+    const content = read('src/hooks/mutations/sbar.ts')
+
+    expect(content).toContain("endsWith('/api')")
+    expect(content).toContain("'/sbar/extract'")
+    expect(content).toContain("'/api/sbar/extract'")
+  })
 })
