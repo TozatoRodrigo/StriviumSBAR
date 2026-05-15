@@ -5,6 +5,9 @@ from sqlmodel import Session
 
 from app.core.database import get_session
 from app.modules.auth.repositories.permission_repository import PermissionRepository
+from app.modules.auth.repositories.refresh_token_repository import (
+    RefreshTokenRepository,
+)
 from app.modules.auth.repositories.role_repository import RoleRepository
 
 
@@ -16,3 +19,9 @@ def get_permission_repository(
 
 def get_role_repository(db: Annotated[Session, Depends(get_session)]) -> RoleRepository:
     return RoleRepository(db)
+
+
+def get_refresh_token_repository(
+    db: Annotated[Session, Depends(get_session)],
+) -> RefreshTokenRepository:
+    return RefreshTokenRepository(db)

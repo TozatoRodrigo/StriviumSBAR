@@ -66,9 +66,7 @@ type WorkspaceRefreshTokenHttpResponse = {
 export function useWorkspaceRefreshToken(onSuccess?: (data: WorkspaceRefreshTokenHttpResponse) => void) {
   return useMutation<WorkspaceRefreshTokenHttpResponse, Error, WorkspaceRefreshTokenPayload>({
     mutationFn: async ({ refresh_token }: WorkspaceRefreshTokenPayload) => {
-      return api
-        .post<WorkspaceRefreshTokenHttpResponse>('/tenant/v1/refresh/tenant', { refresh_token })
-        .then(data => data.data)
+      return api.post<WorkspaceRefreshTokenHttpResponse>('/auth/v1/refresh/tenant', { refresh_token }).then(data => data.data)
     },
     onSuccess,
   })

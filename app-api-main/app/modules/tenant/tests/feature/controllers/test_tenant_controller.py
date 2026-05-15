@@ -10,7 +10,11 @@ from app.main import app
 from app.models.role import Role
 from app.models.tenant import Tenant
 from app.models.tenant_user import TenantUser
-from app.tests.tenant import create_tenant, create_tenant_access_token
+from app.tests.tenant import (
+    create_role_without_permissions,
+    create_tenant,
+    create_tenant_access_token,
+)
 from app.tests.tenant_user import create_tenant_user
 from app.tests.user import create_access_token, create_user
 
@@ -84,3 +88,77 @@ def test_get_tenant_should_return_200_when_tenant_is_valid() -> None:
     data = response.json()
     assert data["id"] == str(tenant.id)
     assert data["name"] == tenant.name
+
+
+def test_update_tenant_should_return_200_when_tenant_is_valid() -> None:
+    tenant = create_tenant()
+    access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    payload = {"name": "Tenant Atualizado"}
+    response = client.patch(
+        f"/tenant/v1/tenants/{tenant.id}", json=payload, headers=headers
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["id"] == str(tenant.id)
+    assert data["name"] == payload["name"]
+
+
+def test_update_tenant_should_return_403_when_tenant_from_token_is_different() -> None:
+    tenant = create_tenant()
+    another_tenant = create_tenant()
+    access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    payload = {"name": "Tenant Inválido"}
+    response = client.patch(
+        f"/tenant/v1/tenants/{another_tenant.id}",
+        json=payload,
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_tenant_should_return_401_without_token() -> None:
+    tenant = create_tenant()
+    response = client.get(f"/tenant/v1/tenants/{tenant.id}")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_get_tenant_should_return_403_when_permission_is_missing() -> None:
+    tenant = create_tenant()
+    user = create_user()
+    restricted_role = create_role_without_permissions()
+    create_tenant_user(
+        {"tenant_id": tenant.id, "user_id": user.id, "role_id": restricted_role.id}
+    )
+    access_token = create_tenant_access_token(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = client.get(f"/tenant/v1/tenants/{tenant.id}", headers=headers)
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_update_tenant_should_return_403_when_permission_is_missing() -> None:
+    tenant = create_tenant()
+    user = create_user()
+    restricted_role = create_role_without_permissions()
+    create_tenant_user(
+        {"tenant_id": tenant.id, "user_id": user.id, "role_id": restricted_role.id}
+    )
+    access_token = create_tenant_access_token(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    response = client.patch(
+        f"/tenant/v1/tenants/{tenant.id}",
+        json={"name": "Sem permissão"},
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN

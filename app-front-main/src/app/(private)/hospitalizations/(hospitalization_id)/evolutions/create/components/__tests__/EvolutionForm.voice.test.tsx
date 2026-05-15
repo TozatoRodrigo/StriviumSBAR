@@ -99,14 +99,18 @@ describe('EvolutionForm voice dictation', () => {
     render(<EvolutionForm isPending={false} submitAction={vi.fn()} initialData={requiredInitialData} />)
 
     await user.click(screen.getByRole('button', { name: 'Ditar por voz em Situação atual' }))
-    act(() => {
+    await act(async () => {
       MockSpeechRecognition.instances[0].emitResult('sem febre nas últimas horas')
     })
 
-    expect(screen.getByLabelText('Situação atual')).toHaveValue(
-      'Paciente em avaliação sem febre nas últimas horas'
+    await waitFor(() =>
+      expect(screen.getByLabelText('Situação atual')).toHaveValue(
+        'Paciente em avaliação sem febre nas últimas horas'
+      )
     )
-    expect(screen.getByLabelText('Avaliação clínica')).toHaveValue('Paciente clinicamente estável')
+    await waitFor(() =>
+      expect(screen.getByLabelText('Avaliação clínica')).toHaveValue('Paciente clinicamente estável')
+    )
   })
 
   it('does not add audio files to the submit payload', async () => {

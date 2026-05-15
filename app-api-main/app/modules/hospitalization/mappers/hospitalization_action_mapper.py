@@ -6,6 +6,7 @@ from fastapi_pagination import Page
 from app.enums.models.hospitalization_action_status_enums import (
     HospitalizationActionStatus,
 )
+from app.exceptions.validation_error import ValidationError
 from app.filesystem.filesystem import Filesystem
 from app.models.hospitalization_action import HospitalizationAction
 from app.models.hospitalization_action_sbar import HospitalizationActionSbar
@@ -173,7 +174,7 @@ class HospitalizationActionMapper:
         parsed = json.loads(value)
         if not isinstance(parsed, list):
             message = "Expected JSON list"
-            raise TypeError(message)
+            raise ValidationError(message)
         return [str(item) for item in parsed]
 
     @staticmethod
@@ -183,5 +184,5 @@ class HospitalizationActionMapper:
         parsed = json.loads(value)
         if not isinstance(parsed, dict):
             message = "Expected JSON object"
-            raise TypeError(message)
+            raise ValidationError(message)
         return {str(key): float(parsed[key]) for key in parsed}

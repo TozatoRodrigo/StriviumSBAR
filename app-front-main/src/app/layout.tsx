@@ -1,68 +1,29 @@
-'use client'
-
-import '@/lib/i18n'
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 import './globals.css'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { Suspense, useEffect } from 'react'
-import { Loader } from '@/components/Loader'
-import { SnackbarProvider } from 'notistack'
-import { AuthTokenProvider } from '@/contexts/AuthTokenContext'
-import { AuthProvider } from '@/contexts/AuthContext'
-import { WorkspaceTokenProvider } from '@/contexts/WorkspaceTokenContext'
-import { WorkspaceProvider } from '@/contexts/WorkspaceContext'
-import { createTheme, ThemeProvider } from '@mui/material'
-import { PwaInstallProvider } from '@/components/PwaInstallProvider'
+import { AppProviders } from '@/components/AppProviders'
+import type { Metadata } from 'next'
+import { Roboto } from 'next/font/google'
 
-const theme = createTheme({
-  colorSchemes: {
-    dark: false,
-  },
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
+  display: 'swap',
 })
 
-const queryClient = new QueryClient()
+export const metadata: Metadata = {
+  title: 'Strivium - Link',
+  manifest: '/manifest.json',
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').then(registration => console.log('scope is: ', registration.scope))
-    }
-  }, [])
-
   return (
     <html lang="pt_BR">
-      <head>
-        <title>Strivium - Link</title>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
-      </head>
-      <body className={`antialiased`}>
+      <body className={`${roboto.className} antialiased`}>
         <div className="container mx-auto max-w-5xl h-[100dvh]">
-          <ThemeProvider theme={theme}>
-            <SnackbarProvider anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}>
-              <PwaInstallProvider>
-                <Suspense fallback={<Loader />}>
-                  <QueryClientProvider client={queryClient}>
-                    <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-                      <AuthTokenProvider>
-                        <WorkspaceTokenProvider>
-                          <AuthProvider>
-                            <WorkspaceProvider>{children}</WorkspaceProvider>
-                          </AuthProvider>
-                        </WorkspaceTokenProvider>
-                      </AuthTokenProvider>
-                    </AppRouterCacheProvider>
-                    <ReactQueryDevtools initialIsOpen={false} />
-                  </QueryClientProvider>
-                </Suspense>
-              </PwaInstallProvider>
-            </SnackbarProvider>
-          </ThemeProvider>
+          <AppProviders>{children}</AppProviders>
         </div>
       </body>
     </html>

@@ -48,7 +48,12 @@ class MedicalTeamRepository:
         return self.db.exec(query).first()
 
     def delete(self, medical_team_id: UUID) -> None:
-        self.db.exec(delete(MedicalTeam).where(MedicalTeam.id == medical_team_id))
+        self.db.exec(
+            delete(MedicalTeam).where(
+                MedicalTeam.id == medical_team_id,
+                MedicalTeam.tenant_id == self.tenant_id,
+            )
+        )
         self.db.commit()
 
     def get_by_id(self, medical_team_id: UUID) -> MedicalTeam | None:

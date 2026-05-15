@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 
 export type RolesHttpResponse = {
   id: string
-  name: 'member' | 'admin'
+  name: 'member' | 'admin' | 'doctor'
   description: string
 }
 

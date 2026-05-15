@@ -1,3 +1,4 @@
+import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
@@ -7,10 +8,14 @@ from app.modules.sbar.services.ollama_sbar_extractor import OllamaSbarExtractor
 from app.tests.tenant import create_tenant_access_token
 
 client = TestClient(app)
+CONFIDENCE_SITUATION = 0.8
+CONFIDENCE_ASSESSMENT = 0.9
+CONFIDENCE_RECOMMENDATION = 0.7
+CONFIDENCE_PLAN = 0.7
 
 
 def test_extract_sbar_returns_valid_fallback_json_when_ai_is_disabled(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(envs, "SBAR_AI_ENABLED", False)
     tenant_access_token = create_tenant_access_token()
@@ -45,7 +50,9 @@ def test_extract_sbar_returns_valid_json_for_empty_transcript() -> None:
     tenant_access_token = create_tenant_access_token()
     headers = {"Authorization": f"Bearer {tenant_access_token}"}
 
-    response = client.post("/api/sbar/extract", headers=headers, json={"transcript": " "})
+    response = client.post(
+        "/api/sbar/extract", headers=headers, json={"transcript": " "}
+    )
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -76,10 +83,10 @@ def test_extract_sbar_normalizes_confidence_from_zero_to_ten_scale() -> None:
         }
     }
 
-    data = OllamaSbarExtractor._parse_ollama_response(raw_response)
+    data = OllamaSbarExtractor.parse_ollama_response(raw_response)
 
-    assert data.confidence.situation == 0.8
+    assert data.confidence.situation == CONFIDENCE_SITUATION
     assert data.confidence.background == 0
-    assert data.confidence.assessment == 0.9
-    assert data.confidence.recommendation == 0.7
-    assert data.confidence.plan == 0.7
+    assert data.confidence.assessment == CONFIDENCE_ASSESSMENT
+    assert data.confidence.recommendation == CONFIDENCE_RECOMMENDATION
+    assert data.confidence.plan == CONFIDENCE_PLAN

@@ -83,13 +83,15 @@ describe('EvolutionForm AI dictation', () => {
     expect(screen.getByLabelText('Avaliação clínica')).toHaveValue('Evolução estável.')
     expect(screen.getByLabelText('Recomendação')).toHaveValue('Manter conduta.')
     expect(screen.getByLabelText('Plano')).toHaveValue('Reavaliar amanhã.')
-    expect(screen.getByText('Sinais vitais completos.')).toBeInTheDocument()
-    expect(screen.getByText('Revise o texto antes de salvar.')).toBeInTheDocument()
+    expect(screen.getByText(/Ausentes\/ambíguas:/i)).toBeInTheDocument()
+    expect(screen.getByText(/Atenções:/i)).toBeInTheDocument()
 
     fireEvent.submit(document.getElementById(EvolutionForm.id)!)
 
     expect(submitAction).not.toHaveBeenCalled()
-    expect(screen.getByText('Confirme a revisão médica antes de salvar.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText(/Confirme a revisão médica antes de salvar\./i)).toBeInTheDocument()
+    })
 
     await user.click(screen.getByRole('checkbox', { name: 'Revisei e confirmo o rascunho gerado pela IA' }))
     fireEvent.submit(document.getElementById(EvolutionForm.id)!)

@@ -11,6 +11,7 @@
     "info": "next info",
     "sync": "npx cap sync",
     "test": "vitest run",
+    "test:contracts:smoke": "vitest run src/hooks/__tests__/api-contracts.smoke.test.ts",
     "test:watch": "vitest",
     "android": "LOCAL_IP=$(ip route get 1.1.1.1 | awk '{print $7; exit}') npx cap run android",
     "android:build": "npx cap build android",

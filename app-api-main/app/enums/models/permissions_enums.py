@@ -31,3 +31,11 @@ class MedicalTeamPermissionsEnum(Enum):
     READ = "read:medical_team"
     UPDATE = "update:medical_team"
     DELETE = "delete:medical_team"
+
+
+class DoctorPermissionsEnum(Enum):
+    # Doctor Permissions
+    CREATE = "create:doctor"
+    READ = "read:doctor"
+    UPDATE = "update:doctor"
+    DELETE = "delete:doctor"

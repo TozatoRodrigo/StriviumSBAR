@@ -1,6 +1,11 @@
 from fastapi import APIRouter, Depends, status
 
-from app.middlewares.auth_middleware import verify_tenant_jwt, verify_user_jwt
+from app.enums.models.permissions_enums import TenantUserPermissionsEnum
+from app.middlewares.auth_middleware import (
+    require_permission,
+    verify_tenant_jwt,
+    verify_user_jwt,
+)
 from app.modules.tenant_user.controllers.tenant_user_controller import (
     paginate_tenant_users,
 )
@@ -33,14 +38,20 @@ router.add_api_route(
     methods=["GET"],
     status_code=status.HTTP_200_OK,
     response_model=PaginateTenantUsersResponse,
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(TenantUserPermissionsEnum.READ.value)),
+    ],
 )
 
 router.add_api_route(
     "/invite",
     endpoint=send_invite,
     methods=["POST"],
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(TenantUserPermissionsEnum.CREATE.value)),
+    ],
     status_code=status.HTTP_202_ACCEPTED,
 )
 
@@ -49,7 +60,10 @@ router.add_api_route(
     endpoint=get_tenant_pending_invites,
     methods=["GET"],
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(TenantUserPermissionsEnum.READ.value)),
+    ],
     response_model=ListTenantUserInviteResponse,
 )
 

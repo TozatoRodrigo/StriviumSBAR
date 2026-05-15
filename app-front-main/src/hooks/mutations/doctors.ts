@@ -17,11 +17,11 @@ export type DoctorCreateHttpRequest = {
   payload: DoctorPayload
 }
 
-type DoctorUpdateHttpRequest = { id: number } & DoctorCreateHttpRequest
+type DoctorUpdateHttpRequest = { id: string } & DoctorCreateHttpRequest
 type DoctorDeleteHttpRequest = { id: string }
 
 type DoctorHttpResponse = {
-  id: number
+  id: string
   full_name: string
   birth_date: string
   cellphone: string
@@ -36,25 +36,7 @@ type DoctorHttpResponse = {
 export function useCreateDoctor() {
   return useMutation<DoctorHttpResponse, Error, DoctorCreateHttpRequest>({
     mutationFn: async ({ payload }: DoctorCreateHttpRequest) => {
-      console.log('POST', `/doctors`, { payload })
-      return new Promise(resolve =>
-        setTimeout(
-          () =>
-            resolve({
-              id: 1,
-              full_name: '',
-              birth_date: new Date().toISOString(),
-              cellphone: '454645465',
-              crm_number: '1234',
-              crm_uf: 'PR',
-              document: '88888',
-              email: 'doctor@doctor.com',
-              gender: 'male',
-              specialty: 'CARDIOLOGY',
-            }),
-          3000
-        )
-      )
+      return api.post('/doctor/v1/doctors', payload).then(({ data }) => data)
     },
   })
 }
@@ -62,25 +44,7 @@ export function useCreateDoctor() {
 export function useUpdateDoctor() {
   return useMutation<DoctorHttpResponse, Error, DoctorUpdateHttpRequest>({
     mutationFn: async ({ id, payload }: DoctorUpdateHttpRequest) => {
-      console.log('PATCH', `/doctors/${id}`, { payload })
-      return new Promise(resolve =>
-        setTimeout(
-          () =>
-            resolve({
-              id: 1,
-              full_name: '',
-              birth_date: new Date().toISOString(),
-              cellphone: '454645465',
-              crm_number: '1234',
-              crm_uf: 'PR',
-              document: '88888',
-              email: 'doctor@doctor.com',
-              gender: 'male',
-              specialty: 'CARDIOLOGY',
-            }),
-          3000
-        )
-      )
+      return api.put(`/doctor/v1/doctors/${id}`, payload).then(({ data }) => data)
     },
   })
 }

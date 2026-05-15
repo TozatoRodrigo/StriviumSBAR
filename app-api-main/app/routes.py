@@ -49,3 +49,8 @@ if not envs.APP_MODULE or envs.APP_MODULE == "tenant_user":
     from .modules.tenant_user.routers import router as tenant_user_router
 
     router.include_router(tenant_user_router)
+
+if not envs.APP_MODULE or envs.APP_MODULE == "doctor":
+    from .modules.doctor.routes import router as doctor_router
+
+    router.include_router(doctor_router)

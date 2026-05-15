@@ -15,7 +15,7 @@ type Doctor = {
   first_name: string
   last_name: string
   crm: {
-    number: number
+    number: string
     uf: string
   }
 }

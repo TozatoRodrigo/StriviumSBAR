@@ -13,6 +13,7 @@ from app.modules.tenant_user.di.tenant_user.repositories import (
 )
 from app.modules.tenant_user.di.tenant_user_invite.mappers import (
     get_tenant_user_invite_mapper,
+    get_tenant_user_invite_response_mapper,
 )
 from app.modules.tenant_user.di.tenant_user_invite.repositories import (
     get_tenant_user_invite_repository,
@@ -68,7 +69,7 @@ def get_get_invites_use_case(
         TenantUserInviteRepository, Depends(get_tenant_user_invite_repository)
     ],
     tenant_user_invite_mapper: Annotated[
-        TenantUserInviteMapper, Depends(get_tenant_user_invite_mapper)
+        TenantUserInviteMapper, Depends(get_tenant_user_invite_response_mapper)
     ],
     current_user: Annotated[User, Depends(get_logged_user)],
 ) -> GetInvitesUseCase:
@@ -84,7 +85,7 @@ def get_accept_invite_use_case(
         TenantUserInviteRepository, Depends(get_tenant_user_invite_repository)
     ],
     tenant_user_invite_mapper: Annotated[
-        TenantUserInviteMapper, Depends(get_tenant_user_invite_mapper)
+        TenantUserInviteMapper, Depends(get_tenant_user_invite_response_mapper)
     ],
     tenant_user_repository: Annotated[
         TenantUserRepository, Depends(get_tenant_user_repository)
@@ -104,7 +105,7 @@ def get_get_pending_invites_count_use_case(
         TenantUserInviteRepository, Depends(get_tenant_user_invite_repository)
     ],
     tenant_user_invite_mapper: Annotated[
-        TenantUserInviteMapper, Depends(get_tenant_user_invite_mapper)
+        TenantUserInviteMapper, Depends(get_tenant_user_invite_response_mapper)
     ],
     current_user: Annotated[User, Depends(get_logged_user)],
 ) -> GetPendingInvitesCountUseCase:
@@ -120,7 +121,7 @@ def get_reject_invite_use_case(
         TenantUserInviteRepository, Depends(get_tenant_user_invite_repository)
     ],
     tenant_user_invite_mapper: Annotated[
-        TenantUserInviteMapper, Depends(get_tenant_user_invite_mapper)
+        TenantUserInviteMapper, Depends(get_tenant_user_invite_response_mapper)
     ],
     current_user: Annotated[User, Depends(get_logged_user)],
 ) -> RejectInviteUseCase:
@@ -136,7 +137,7 @@ def get_get_tenant_pending_invites_use_case(
         TenantUserInviteRepository, Depends(get_tenant_user_invite_repository)
     ],
     tenant_user_invite_mapper: Annotated[
-        TenantUserInviteMapper, Depends(get_tenant_user_invite_mapper)
+        TenantUserInviteMapper, Depends(get_tenant_user_invite_response_mapper)
     ],
     tenant_id: Annotated[UUID, Depends(get_tenant_id_from_token)],
 ) -> GetTenantPendingInvitesUseCase:

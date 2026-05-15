@@ -22,11 +22,21 @@ jobs:
       - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Ensure Yarn Lockfile Strategy
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "package-lock.json found. Use yarn.lock as single source of truth."
+            exit 1
+          fi
+
       - name: Run Lint
         run: yarn lint
 
       - name: Run Tests
         run: yarn test
 
+      - name: Contract Smoke Tests
+        run: yarn test:contracts:smoke
+
       - name: Security Check
-        run: yarn audit --level --verbose high
+        run: yarn audit --level high

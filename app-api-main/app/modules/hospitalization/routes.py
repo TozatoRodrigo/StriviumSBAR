@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
-from app.middlewares.auth_middleware import verify_tenant_jwt
+from app.enums.models.permissions_enums import HospitalizationPermissionsEnum
+from app.middlewares.auth_middleware import require_permission, verify_tenant_jwt
 from app.modules.hospitalization.controllers.hospitalization_action_controller import (
     create_hospitalization_action,
     get_hospitalization_action,
@@ -38,7 +39,10 @@ router.add_api_route(
     endpoint=create_hospitalization,
     response_model=HospitalizationResponse,
     methods=["POST"],
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.CREATE.value)),
+    ],
 )
 
 router.add_api_route(
@@ -46,7 +50,10 @@ router.add_api_route(
     endpoint=paginate_hospitalizations,
     response_model=PaginateHospitalizationResponse,
     methods=["GET"],
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.READ.value)),
+    ],
 )
 
 router.add_api_route(
@@ -54,7 +61,10 @@ router.add_api_route(
     endpoint=paginate_pendings_hospitalizations,
     response_model=PaginateHospitalizationResponse,
     methods=["GET"],
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.READ.value)),
+    ],
 )
 
 router.add_api_route(
@@ -62,7 +72,10 @@ router.add_api_route(
     endpoint=paginate_completed_hospitalizations,
     response_model=PaginateHospitalizationResponse,
     methods=["GET"],
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.READ.value)),
+    ],
 )
 
 router.add_api_route(
@@ -70,7 +83,10 @@ router.add_api_route(
     endpoint=get_hospitalization,
     response_model=HospitalizationResponse,
     methods=["GET"],
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.READ.value)),
+    ],
 )
 
 router.add_api_route(
@@ -78,7 +94,10 @@ router.add_api_route(
     endpoint=update_hospitalization,
     response_model=HospitalizationResponse,
     methods=["PUT"],
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.UPDATE.value)),
+    ],
 )
 
 # Hospitalization actions
@@ -92,7 +111,10 @@ hospitalization_action_router.add_api_route(
     endpoint=create_hospitalization_action,
     methods=["POST"],
     response_model=HospitalizationActionResponse,
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.UPDATE.value)),
+    ],
 )
 
 hospitalization_action_router.add_api_route(
@@ -100,7 +122,10 @@ hospitalization_action_router.add_api_route(
     endpoint=update_hospitalization_action,
     methods=["PUT"],
     response_model=HospitalizationActionResponse,
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.UPDATE.value)),
+    ],
 )
 
 
@@ -109,7 +134,10 @@ hospitalization_action_router.add_api_route(
     endpoint=paginate_hospitalization_actions,
     methods=["GET"],
     response_model=PaginateHospitalizationActionResponse,
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.READ.value)),
+    ],
 )
 
 hospitalization_action_router.add_api_route(
@@ -117,5 +145,8 @@ hospitalization_action_router.add_api_route(
     endpoint=get_hospitalization_action,
     methods=["GET"],
     response_model=HospitalizationActionResponse,
-    dependencies=[Depends(verify_tenant_jwt)],
+    dependencies=[
+        Depends(verify_tenant_jwt),
+        Depends(require_permission(HospitalizationPermissionsEnum.READ.value)),
+    ],
 )

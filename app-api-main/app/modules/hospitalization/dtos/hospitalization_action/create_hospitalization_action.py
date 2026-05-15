@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, model_validator
+from pydantic_core import PydanticCustomError
 
 from app.enums.models.hospitalization_action_sbar_clinical_course_enums import (
     HospitalizationActionSbarClinicalCourse,
@@ -163,8 +164,11 @@ class CreateHospitalizationAction(BaseModel):
             "sbar_recommendation": self.sbar_recommendation,
             "sbar_priority": self.sbar_priority,
         }
-        missing_fields = [field for field, value in required_fields.items() if not value]
+        missing_fields = [
+            field for field, value in required_fields.items() if not value
+        ]
         if missing_fields:
+            error_type = "sbar_required_fields"
             message = f"Campos SBAR obrigatórios ausentes: {', '.join(missing_fields)}"
-            raise ValueError(message)
+            raise PydanticCustomError(error_type, message)
         return self

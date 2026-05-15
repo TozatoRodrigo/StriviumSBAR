@@ -47,11 +47,17 @@ class UpdateHospitalizationActionUseCase:
         self.save_hospitalization_attachment = save_hospitalization_attachment
 
     def handle(
-        self, hospitalization_action_id: UUID, data: UpdateHospitalizationAction
+        self,
+        hospitalization_id: UUID,
+        hospitalization_action_id: UUID,
+        data: UpdateHospitalizationAction,
     ) -> HospitalizationActionResponse:
         self.__validate_ai_review(data)
         hospitalization_action = self.repository.find_by_id(hospitalization_action_id)
-        if hospitalization_action is None:
+        if (
+            hospitalization_action is None
+            or hospitalization_action.hospitalization_id != hospitalization_id
+        ):
             raise HospitalizationActionNotFoundError(hospitalization_action_id)
 
         hospitalization_action.description = data.description
@@ -80,10 +86,10 @@ class UpdateHospitalizationActionUseCase:
         if not data.sbar_ai_review_confirmed:
             raise ClientAwareError(
                 AI_REVIEW_REQUIRED_MESSAGE,
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             )
         if not data.sbar_source_transcript:
             raise ClientAwareError(
                 AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE,
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             )

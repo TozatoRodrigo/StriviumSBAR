@@ -1,15 +1,23 @@
+import pytest
 from faker import Faker
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.core.database import engine
+from app.core.environment import envs
 from app.enums.models.tenant_user_invite_status_enum import TenantUserInviteStatusEnum
+from app.infrastructure.email.send_mail import SendMail
 from app.main import app
 from app.models.tenant_user import TenantUser
 from app.models.tenant_user_invite import TenantUserInvite
 from app.tests.role import get_admin_role
-from app.tests.tenant import create_tenant, create_tenant_access_token
+from app.tests.tenant import (
+    create_role_without_permissions,
+    create_tenant,
+    create_tenant_access_token,
+)
+from app.tests.tenant_user import create_tenant_user
 from app.tests.tenant_user_invite import create_tenant_user_invite
 from app.tests.user import create_access_token, create_user
 
@@ -32,6 +40,7 @@ def test_send_user_invite_should_return_202_accepted() -> None:
         headers={"Authorization": f"Bearer {tenant_access_token}"},
     )
     assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.headers["x-tenant-invite-email-dispatch"] == "skipped"
     with Session(engine) as session:
         tenant_user_invite = session.exec(
             select(TenantUserInvite).where(
@@ -41,6 +50,88 @@ def test_send_user_invite_should_return_202_accepted() -> None:
             )
         ).first()
         assert tenant_user_invite is not None
+
+
+def test_send_user_invite_should_return_401_without_token() -> None:
+    role = get_admin_role()
+    response = client.post(
+        "/tenant-user/v1/tenant-users/invite",
+        json={"email": fake.email(), "role_id": str(role.id)},
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_send_user_invite_should_return_403_when_permission_is_missing() -> None:
+    tenant = create_tenant()
+    user = create_user()
+    restricted_role = create_role_without_permissions()
+    create_tenant_user(
+        {"tenant_id": tenant.id, "user_id": user.id, "role_id": restricted_role.id}
+    )
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    role = get_admin_role()
+    response = client.post(
+        "/tenant-user/v1/tenant-users/invite",
+        json={"email": fake.email(), "role_id": str(role.id)},
+        headers={"Authorization": f"Bearer {tenant_access_token}"},
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_send_user_invite_should_return_sent_header_when_email_dispatch_succeeds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(envs, "TENANT_INVITE_EMAIL_ENABLED", True)
+    send_call_count = {"value": 0}
+
+    def _send_stub(self: SendMail, *_args: object, **_kwargs: object) -> None:
+        send_call_count["value"] += 1
+
+    monkeypatch.setattr(SendMail, "send", _send_stub)
+
+    tenant = create_tenant()
+    role = get_admin_role()
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    response = client.post(
+        "/tenant-user/v1/tenant-users/invite",
+        json={
+            "email": fake.email(),
+            "role_id": str(role.id),
+        },
+        headers={"Authorization": f"Bearer {tenant_access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_202_ACCEPTED
+    assert response.headers["x-tenant-invite-email-dispatch"] == "sent"
+    assert send_call_count["value"] == 1
+
+
+def test_send_user_invite_should_return_503_when_email_dispatch_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(envs, "TENANT_INVITE_EMAIL_ENABLED", True)
+
+    def _raise_send_failure(*_args: object, **_kwargs: object) -> None:
+        msg = "SMTP unavailable"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr(SendMail, "send", _raise_send_failure)
+
+    tenant = create_tenant()
+    role = get_admin_role()
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    response = client.post(
+        "/tenant-user/v1/tenant-users/invite",
+        json={
+            "email": fake.email(),
+            "role_id": str(role.id),
+        },
+        headers={"Authorization": f"Bearer {tenant_access_token}"},
+    )
+
+    assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
 
 
 def test_send_invite_to_current_user_should_return_400() -> None:

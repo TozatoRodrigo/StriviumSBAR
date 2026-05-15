@@ -35,7 +35,9 @@ class HospitalizationActionSbar(SQLModel, table=True):
     clinical_course: HospitalizationActionSbarClinicalCourse | None = Field(
         default=None, nullable=True
     )
-    pending_items: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
+    pending_items: str | None = Field(
+        default=None, sa_column=Column(Text, nullable=True)
+    )
     alerts: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     source_transcript: str | None = Field(
         default=None, sa_column=Column(Text, nullable=True)

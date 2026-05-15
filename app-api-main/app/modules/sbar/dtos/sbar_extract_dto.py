@@ -45,7 +45,8 @@ class SbarExtractResponse(BaseModel):
         cls, warnings: list[str], missing_information: list[str] | None = None
     ) -> "SbarExtractResponse":
         return cls(
-            missing_information=missing_information or ["Revisar transcrição manualmente."],
+            missing_information=missing_information
+            or ["Revisar transcrição manualmente."],
             warnings=warnings,
             confidence=SbarConfidence(),
         )

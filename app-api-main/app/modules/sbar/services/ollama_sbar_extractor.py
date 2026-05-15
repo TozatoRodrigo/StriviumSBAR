@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 
 from app.core.environment import envs
+from app.exceptions.validation_error import ValidationError
 from app.modules.sbar.dtos.sbar_extract_dto import (
     SbarExtractContext,
     SbarExtractResponse,
@@ -13,17 +14,40 @@ from app.modules.sbar.dtos.sbar_extract_dto import (
 log = logging.getLogger("logger")
 
 SYSTEM_PROMPT = """
-Você é um extrator de informações clínicas para organização de evolução médica em formato SBAR.
-Sua tarefa é apenas reorganizar o texto fornecido pelo médico.
-Não crie fatos novos.
-Não sugira condutas que não estejam explícitas ou fortemente implícitas no texto.
-Se uma informação não estiver presente, retorne string vazia no campo correspondente.
-Se houver ambiguidade, adicione em missing_information.
-Mantenha linguagem médica objetiva.
-Preserve negações clínicas como "sem febre", "nega dor", "sem dispneia".
-Use confidence como número decimal entre 0 e 1. Exemplo: 0.8, nunca 8.
-Retorne apenas JSON válido conforme o schema.
+Você é um extrator clínico para organizar evolução médica no formato SBAR.
+
+Objetivo:
+- Reorganizar exclusivamente a transcrição enviada pelo médico.
+
+Regras inegociáveis:
+- Não invente fatos, diagnósticos, exames, medicações, doses ou condutas.
+- Não sugira condutas novas; apenas extraia o que já está explícito ou fortemente implícito.
+- Se uma informação não existir, deixe o campo como string vazia.
+- Se houver ambiguidade, lacuna relevante ou conflito, registre em missing_information e/ou warnings.
+- Preserve negações clínicas (ex.: "sem febre", "nega dor", "sem dispneia").
+- Preserve referência temporal relevante (ex.: "hoje", "últimas 24h", "amanhã").
+- Mantenha linguagem médica objetiva e curta, sem floreios.
+
+Mapeamento obrigatório dos campos SBAR:
+- situation: estado atual e motivo clínico principal agora (sinais/sintomas/evolução imediata).
+- background: contexto clínico prévio relevante (diagnósticos prévios, comorbidades, histórico útil).
+- assessment: interpretação clínica documentada pelo médico (gravidade, resposta, estabilidade/piora/melhora).
+- recommendation: recomendações/condutas imediatas descritas.
+- plan: próximos passos com horizonte temporal (reavaliação, exames, monitorização, continuidade da conduta).
+
+Critérios de qualidade:
+- Evite duplicação desnecessária entre campos.
+- Não copie a transcrição inteira para um único campo.
+- Se o médico apenas descreve fatos sem interpretação, não force assessment.
+- Use confidence como decimal de 0 a 1 (ex.: 0.8; nunca 8).
+
+Formato de saída:
+- Retorne apenas JSON válido e estritamente compatível com o schema.
+- Não use markdown, não use crases, não adicione texto fora do JSON.
 """.strip()
+
+MAX_TEN_POINT_CONFIDENCE = 10
+MIN_TEN_POINT_CONFIDENCE = 1
 
 
 class OllamaSbarExtractor:
@@ -93,12 +117,17 @@ class OllamaSbarExtractor:
         if context and context.hospitalization_id:
             context_lines.append(f"hospitalization_id: {context.hospitalization_id}")
 
-        context_text = "\n".join(context_lines) if context_lines else "Sem contexto adicional."
+        context_text = (
+            "\n".join(context_lines) if context_lines else "Sem contexto adicional."
+        )
         return (
             "Contexto opcional da internação:\n"
             f"{context_text}\n\n"
-            "Texto bruto ditado pelo médico:\n"
-            f"{transcript}"
+            "Transcrição clínica bruta (não editar):\n"
+            "<transcript>\n"
+            f"{transcript}\n"
+            "</transcript>\n\n"
+            "Reorganize estritamente o conteúdo acima em SBAR."
         )
 
     @staticmethod
@@ -110,10 +139,14 @@ class OllamaSbarExtractor:
             data = content
         else:
             message = "Ollama response does not contain JSON content"
-            raise TypeError(message)
+            raise ValidationError(message)
 
         data = OllamaSbarExtractor._normalize_confidence_scale(data)
         return SbarExtractResponse.model_validate(data)
+
+    @staticmethod
+    def parse_ollama_response(raw_response: dict[str, Any]) -> SbarExtractResponse:
+        return OllamaSbarExtractor._parse_ollama_response(raw_response)
 
     @staticmethod
     def _normalize_confidence_scale(data: Any) -> Any:
@@ -126,8 +159,10 @@ class OllamaSbarExtractor:
 
         normalized_confidence = confidence.copy()
         for field, value in confidence.items():
-            if isinstance(value, int | float) and 1 < value <= 10:
-                normalized_confidence[field] = value / 10
+            if isinstance(value, int | float) and (
+                MIN_TEN_POINT_CONFIDENCE < value <= MAX_TEN_POINT_CONFIDENCE
+            ):
+                normalized_confidence[field] = value / MAX_TEN_POINT_CONFIDENCE
 
         return {**data, "confidence": normalized_confidence}
 

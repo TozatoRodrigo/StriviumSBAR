@@ -11,6 +11,9 @@ from app.modules.hospitalization.dtos.hospitalization_action.create_hospitalizat
 from app.modules.hospitalization.dtos.responses.hospitalization_action.hospitalization_action_response import (
     HospitalizationActionResponse,
 )
+from app.modules.hospitalization.exceptions.hospitalization.hospitalization_not_found_error import (
+    HospitalizationNotFoundError,
+)
 from app.modules.hospitalization.mappers.hospitalization_action_mapper import (
     HospitalizationActionMapper,
 )
@@ -63,6 +66,11 @@ class CreateHospitalizationActionUseCase:
     ) -> HospitalizationActionResponse:
         self.__validate_ai_review(hospitalization_action_data)
         entity = self.mapper.to_entity(hospitalization_action_data)
+
+        hospitalization = self.hospitalization_repository.get(entity.hospitalization_id)
+        if hospitalization is None:
+            raise HospitalizationNotFoundError(entity.hospitalization_id)
+
         hospitalization_action = self.hospitalization_action_repository.create(entity)
         if hospitalization_action.type in {
             HospitalizationActionType.HOSPITALIZATION_DISCHARGE,
@@ -107,10 +115,10 @@ class CreateHospitalizationActionUseCase:
         if not data.sbar_ai_review_confirmed:
             raise ClientAwareError(
                 AI_REVIEW_REQUIRED_MESSAGE,
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             )
         if not data.sbar_source_transcript:
             raise ClientAwareError(
                 AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE,
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             )

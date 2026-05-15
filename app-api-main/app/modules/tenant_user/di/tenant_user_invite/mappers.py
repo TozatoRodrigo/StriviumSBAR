@@ -13,3 +13,7 @@ def get_tenant_user_invite_mapper(
     tenant_id: Annotated[UUID, Depends(get_tenant_id_from_token)],
 ) -> TenantUserInviteMapper:
     return TenantUserInviteMapper(tenant_id)
+
+
+def get_tenant_user_invite_response_mapper() -> TenantUserInviteMapper:
+    return TenantUserInviteMapper()

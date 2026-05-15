@@ -1,3 +1,4 @@
+import pytest
 from faker import Faker
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -9,7 +10,11 @@ from app.enums.models.hospitalization_action_type_enums import HospitalizationAc
 from app.main import app
 from app.tests.hospitalization import create_hospitalization
 from app.tests.hospitalization_action import create_hospitalization_action
-from app.tests.tenant import create_tenant, create_tenant_access_token
+from app.tests.tenant import (
+    create_role_without_permissions,
+    create_tenant,
+    create_tenant_access_token,
+)
 from app.tests.tenant_user import create_tenant_user
 from app.tests.user import create_user
 
@@ -20,7 +25,9 @@ client = TestClient(app)
 
 def test_create_hospitalization_action_should_return_201_when_valid() -> None:
     hospitalization = create_hospitalization()
-    tenant_access_token = create_tenant_access_token()
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": hospitalization.tenant_id}
+    )
     headers = {"Authorization": f"Bearer {tenant_access_token}"}
     data = {
         "description": fake.text(max_nb_chars=100),
@@ -67,7 +74,9 @@ def test_create_hospitalization_action_with_sbar_should_return_201_when_valid() 
     assert response_data["id"] is not None
     assert response_data["hospitalization_id"] == str(hospitalization.id)
     assert response_data["description"] == data["description"]
-    assert response_data["type"] == HospitalizationActionType.HOSPITALIZATION_VISIT.value
+    assert (
+        response_data["type"] == HospitalizationActionType.HOSPITALIZATION_VISIT.value
+    )
     assert response_data["sbar"]["situation"] == data["sbar_situation"]
     assert response_data["sbar"]["background"] == data["sbar_background"]
     assert response_data["sbar"]["assessment"] == data["sbar_assessment"]
@@ -78,7 +87,9 @@ def test_create_hospitalization_action_with_sbar_should_return_201_when_valid() 
     assert response_data["sbar"]["alerts"] == data["sbar_alerts"]
 
 
-def test_create_hospitalization_action_with_ai_sbar_requires_review_confirmation() -> None:
+def test_create_hospitalization_action_with_ai_sbar_requires_review_confirmation() -> (
+    None
+):
     hospitalization = create_hospitalization()
     tenant_access_token = create_tenant_access_token(
         {"tenant_id": hospitalization.tenant_id}
@@ -101,10 +112,12 @@ def test_create_hospitalization_action_with_ai_sbar_requires_review_confirmation
         data=data,
     )
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
-def test_create_hospitalization_action_with_confirmed_ai_sbar_persists_audit_metadata() -> None:
+def test_create_hospitalization_action_with_confirmed_ai_sbar_persists_audit_metadata() -> (
+    None
+):
     hospitalization = create_hospitalization()
     tenant_access_token = create_tenant_access_token(
         {"tenant_id": hospitalization.tenant_id}
@@ -139,8 +152,11 @@ def test_create_hospitalization_action_with_confirmed_ai_sbar_persists_audit_met
     assert response_data["sbar"]["ai_generated"] is True
     assert response_data["sbar"]["ai_review_confirmed"] is True
     assert response_data["sbar"]["ai_warnings"] == ["Revisar dose do antibiótico."]
-    assert response_data["sbar"]["ai_missing_information"] == ["Sinais vitais completos."]
-    assert response_data["sbar"]["ai_confidence"]["situation"] == 0.9
+    assert response_data["sbar"]["ai_missing_information"] == [
+        "Sinais vitais completos."
+    ]
+    situation_confidence = response_data["sbar"]["ai_confidence"]["situation"]
+    assert situation_confidence == pytest.approx(0.9)
 
 
 def test_update_hospitalization_action_should_return_200_when_valid() -> None:
@@ -272,3 +288,143 @@ def test_get_hospitalization_action_should_return_200_when_valid() -> None:
     assert data["user"]["first_name"] == user.first_name
     assert data["user"]["last_name"] == user.last_name
     assert data["user"]["member_type"] == tenant_user.member_type
+
+
+def test_hospitalization_action_routes_should_return_401_without_token() -> None:
+    hospitalization = create_hospitalization()
+    response = client.get(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions"
+    )
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_get_hospitalization_action_should_return_404_when_path_hospitalization_id_mismatches() -> (
+    None
+):
+    tenant = create_tenant()
+    hospitalization = create_hospitalization({"tenant_id": tenant.id})
+    another_hospitalization = create_hospitalization({"tenant_id": tenant.id})
+    hospitalization_action = create_hospitalization_action(
+        {"hospitalization_id": hospitalization.id, "tenant_id": tenant.id}
+    )
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+
+    response = client.get(
+        f"/hospitalization/v1/hospitalizations/{another_hospitalization.id}/hospitalization-actions/{hospitalization_action.id}",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_hospitalization_action_should_return_404_when_path_hospitalization_id_mismatches() -> (
+    None
+):
+    tenant = create_tenant()
+    hospitalization = create_hospitalization({"tenant_id": tenant.id})
+    another_hospitalization = create_hospitalization({"tenant_id": tenant.id})
+    hospitalization_action = create_hospitalization_action(
+        {"hospitalization_id": hospitalization.id, "tenant_id": tenant.id}
+    )
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+
+    response = client.put(
+        f"/hospitalization/v1/hospitalizations/{another_hospitalization.id}/hospitalization-actions/{hospitalization_action.id}",
+        headers=headers,
+        data={"description": fake.text(max_nb_chars=100)},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_hospitalization_action_should_return_403_when_permission_is_missing() -> (
+    None
+):
+    tenant = create_tenant()
+    user = create_user()
+    restricted_role = create_role_without_permissions()
+    create_tenant_user(
+        {"tenant_id": tenant.id, "user_id": user.id, "role_id": restricted_role.id}
+    )
+    hospitalization = create_hospitalization(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    hospitalization_action = create_hospitalization_action(
+        {
+            "hospitalization_id": hospitalization.id,
+            "tenant_id": tenant.id,
+            "user_id": user.id,
+        }
+    )
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+
+    response = client.put(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions/{hospitalization_action.id}",
+        headers=headers,
+        data={"description": fake.text(max_nb_chars=100)},
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_get_hospitalization_action_should_return_403_when_permission_is_missing() -> (
+    None
+):
+    tenant = create_tenant()
+    user = create_user()
+    restricted_role = create_role_without_permissions()
+    create_tenant_user(
+        {"tenant_id": tenant.id, "user_id": user.id, "role_id": restricted_role.id}
+    )
+    hospitalization = create_hospitalization(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    hospitalization_action = create_hospitalization_action(
+        {
+            "hospitalization_id": hospitalization.id,
+            "tenant_id": tenant.id,
+            "user_id": user.id,
+        }
+    )
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+
+    response = client.get(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions/{hospitalization_action.id}",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_create_hospitalization_action_should_return_403_when_permission_is_missing() -> (
+    None
+):
+    tenant = create_tenant()
+    user = create_user()
+    restricted_role = create_role_without_permissions()
+    create_tenant_user(
+        {"tenant_id": tenant.id, "user_id": user.id, "role_id": restricted_role.id}
+    )
+    hospitalization = create_hospitalization(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": tenant.id, "user_id": user.id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+
+    response = client.post(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions",
+        headers=headers,
+        data={"description": fake.text(max_nb_chars=100)},
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN

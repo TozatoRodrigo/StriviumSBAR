@@ -10,11 +10,15 @@ from app.modules.auth.dtos.responses.auth.tenant_auth_response_dto import (
 )
 from app.modules.auth.repositories.permission_repository import PermissionRepository
 from app.modules.auth.repositories.role_repository import RoleRepository
+from app.modules.auth.services.refresh_token.refresh_token_service import (
+    RefreshTokenService,
+)
 from app.modules.auth.services.tenant.tenant_service import TenantService
 from app.modules.auth.services.user.user_service import UserService
 from app.modules.auth.utils.jwt import (
     ACCESS_TOKEN_EXPIRES_MINUTES,
     ACCESS_TOKEN_TYPE,
+    REFRESH_TOKEN_EXPIRES_MINUTES,
     generate_access_token,
     generate_refresh_token,
 )
@@ -27,11 +31,13 @@ class TenantAuthUseCase:
         user_service: UserService,
         role_repository: RoleRepository,
         permission_repository: PermissionRepository,
+        refresh_token_service: RefreshTokenService,
     ) -> None:
         self.tenant_service = tenant_service
         self.user_service = user_service
         self.role_repository = role_repository
         self.permission_repository = permission_repository
+        self.refresh_token_service = refresh_token_service
 
     def handle(self, tenant_id: UUID, user_id: UUID) -> TenantAuthResponseDTO:
         tenant = self.tenant_service.get_tenant_by_id(tenant_id)
@@ -94,11 +100,24 @@ class TenantAuthUseCase:
         }
         return generate_access_token(payload)
 
-    @staticmethod
-    def generate_refresh_token(tenant: Tenant, user_id: UUID) -> str:
+    def generate_access_token_from_ids(self, tenant_id: UUID, user_id: UUID) -> str:
+        tenant = self.tenant_service.get_tenant_by_id(tenant_id)
+        user = self.get_user(user_id)
+        user_role = self.get_user_role(user_id, tenant_id)
+        permissions = self.permission_repository.get_permissions_by_role_id(
+            user_role.id
+        )
+        return self.generate_access_token(tenant, user, user_role, permissions)
+
+    def generate_refresh_token(self, tenant: Tenant, user_id: UUID) -> str:
+        jti, _token_family = self.refresh_token_service.create_token_record(
+            user_id=user_id,
+            token_type="tenant-refresh",  # noqa: S106
+            expires_minutes=REFRESH_TOKEN_EXPIRES_MINUTES,
+        )
         payload = {
             "sub": str(tenant.id),
             "type": "tenant-refresh",
             "user_id": str(user_id),
         }
-        return generate_refresh_token(payload)
+        return generate_refresh_token(payload, jti=jti)

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from app.exceptions.validation_error import ValidationError
 from app.modules.hospitalization.dtos.hospitalization.update_hospitalization_dto import (
     UpdateHospitalizationDTO,
 )
@@ -33,6 +34,10 @@ class UpdateHospitalizationUseCase:
 
         if not hospitalization:
             raise HospitalizationNotFoundError(hospitalization_id)
+
+        if not self.repository.is_medical_team_in_tenant(data.medical_team_id):
+            msg = "Equipe médica não pertence ao tenant autenticado"
+            raise ValidationError(msg)
 
         hospitalization.medical_team_id = data.medical_team_id
         hospitalization.hospitalization_number = data.number

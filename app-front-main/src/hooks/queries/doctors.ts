@@ -14,7 +14,7 @@ export type DoctorsHttpResponse = {
   last_name: string
   crm: {
     uf: string
-    number: number
+    number: string
   }
 }
 
@@ -27,7 +27,7 @@ export function useDoctors({ params, options }: Doctors = { params: { search: ''
 }
 
 export type DoctorHttpResponse = {
-  id: number
+  id: string
   full_name: string
   birth_date: string
   cellphone: string
@@ -39,28 +39,10 @@ export type DoctorHttpResponse = {
   crm_number: string
 }
 
-export function useDoctor(id: number | string, options: { enabled: boolean }) {
+export function useDoctor(id: string, options: { enabled: boolean }) {
   return useQuery<DoctorHttpResponse>({
     ...options,
     queryKey: ['doctors', id],
-    queryFn: () =>
-      new Promise(resolve =>
-        setTimeout(
-          () =>
-            resolve({
-              id: 1,
-              full_name: 'nome completo',
-              birth_date: '2024-07-20T16:41:33.017Z',
-              cellphone: '44034237989',
-              crm_number: '1234',
-              crm_uf: 'PR',
-              document: '85915352006',
-              email: 'doctor@doctor.com',
-              gender: 'male',
-              specialty: 'CARDIOLOGY',
-            }),
-          600
-        )
-      ),
+    queryFn: ({ signal }) => api.get(`/doctor/v1/doctors/${id}`, { signal }).then(({ data }) => data),
   })
 }

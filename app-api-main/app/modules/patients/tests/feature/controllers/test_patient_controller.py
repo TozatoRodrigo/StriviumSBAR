@@ -181,3 +181,47 @@ def test_update_patient_should_return_404_when_patient_not_found() -> None:
         headers=headers,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_patient_routes_should_return_401_without_token() -> None:
+    response = client.get("/patient/v1/patients")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_get_patient_from_other_tenant_should_return_404() -> None:
+    tenant = create_tenant()
+    another_tenant = create_tenant()
+    patient = create_patient({"tenant_id": another_tenant.id})
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {
+        "Authorization": f"Bearer {tenant_access_token}",
+    }
+    response = client.get(
+        f"/patient/v1/patients/{patient.id}",
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_patient_from_other_tenant_should_return_404() -> None:
+    tenant = create_tenant()
+    another_tenant = create_tenant()
+    patient = create_patient(
+        {"tenant_id": another_tenant.id, "first_name": "John", "last_name": "Doe"}
+    )
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {
+        "Authorization": f"Bearer {tenant_access_token}",
+    }
+    data = {
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "document_number": "12345678900",
+        "birth_date": "1990-01-01",
+    }
+    response = client.put(
+        f"/patient/v1/patients/{patient.id}",
+        json=data,
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
