@@ -26,6 +26,7 @@ jobs:
     env:
       NEXT_PUBLIC_API_URL: https://api.link.strivium.com.br
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 0x4AAAAA-ci-placeholder
+      ALLOW_PLACEHOLDER_TURNSTILE_SITE_KEY: "true"
       NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION: "false"
       NEXT_PUBLIC_EXPERIMENTAL_SBAR_AI_DICTATION: "false"
     steps:

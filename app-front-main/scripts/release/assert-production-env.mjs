@@ -21,6 +21,10 @@ const PRIVATE_HOST_PATTERNS = [
   /^.*\.local$/i,
 ]
 
+function allowsTurnstilePlaceholderInCi(env) {
+  return env.CI === 'true' && env.ALLOW_PLACEHOLDER_TURNSTILE_SITE_KEY === 'true'
+}
+
 export function validateProductionEnv(env = process.env) {
   const errors = []
 
@@ -48,7 +52,7 @@ export function validateProductionEnv(env = process.env) {
     errors.push('CAPACITOR_LIVE_RELOAD must not be true for store builds.')
   }
 
-  if (env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+  if (env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !allowsTurnstilePlaceholderInCi(env)) {
     const siteKey = env.NEXT_PUBLIC_TURNSTILE_SITE_KEY.trim()
     if (INVALID_TURNSTILE_SITE_KEY_FRAGMENTS.some(fragment => siteKey.includes(fragment))) {
       errors.push(

@@ -51,4 +51,15 @@ describe('validateProductionEnv', () => {
       }),
     ).toEqual(['NEXT_PUBLIC_TURNSTILE_SITE_KEY must not use Cloudflare test keys for store builds.'])
   })
+
+  it('allows placeholder turnstile key only for CI placeholder validation mode', () => {
+    expect(
+      validateProductionEnv({
+        ...validEnv,
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAA-ci-placeholder',
+        CI: 'true',
+        ALLOW_PLACEHOLDER_TURNSTILE_SITE_KEY: 'true',
+      }),
+    ).toEqual([])
+  })
 })
