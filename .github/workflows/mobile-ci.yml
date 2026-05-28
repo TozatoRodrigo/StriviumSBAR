@@ -64,3 +64,9 @@ jobs:
 
       - name: Build static web export
         run: yarn build
+
+      - name: Upload static web export
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-web-export
+          path: app-front-main/out
