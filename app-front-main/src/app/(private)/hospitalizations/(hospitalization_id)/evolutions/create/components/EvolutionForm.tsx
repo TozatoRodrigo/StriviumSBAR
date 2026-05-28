@@ -27,6 +27,7 @@ import {
   clinicalCourseOptions,
   defaultEvolutionType,
   priorityOptions,
+  typeOptions,
 } from '@/constants/evolutions'
 import { EvolutionFormData, EvolutionSchema } from '@/validations/evolution'
 import { EvolutionSbar, Media } from '@/hooks/queries/evolutions'
@@ -46,6 +47,7 @@ type EvolutionFormInitialData = Partial<EvolutionFormData> & {
 }
 
 type EvolutionFormProps = {
+  allowOutcomeSelection?: boolean
   formId?: string
   hospitalizationId?: string
   initialData?: EvolutionFormInitialData
@@ -184,11 +186,18 @@ const Section = ({
   </Box>
 )
 
-const confidencePercent = (value?: number) => `${Math.round((value ?? 0) * 100)}%`
+const confidencePercent = (value?: number) => {
+  const normalized = Math.max(0, Math.min(100, Math.round((value ?? 0) * 100)))
+  return `${normalized}%`
+}
 
 const hasText = (value?: string | null) => Boolean(value?.trim())
+const dischargeTypeId = 'hospitalization_discharge'
+const deceasedTypeId = 'hospitalization_deceased'
+const closingOutcomeTypeIds = new Set([dischargeTypeId, deceasedTypeId])
 
 export const EvolutionForm = ({
+  allowOutcomeSelection = true,
   formId = id,
   hospitalizationId,
   submitAction,
@@ -242,6 +251,12 @@ export const EvolutionForm = ({
   ].filter(Boolean).length
   const completionPercent = Math.round(((requiredCompleted + optionalCompleted) / 7) * 100)
   const reviewReady = !aiDraft?.generated || aiDraft.reviewConfirmed
+  const hasNoGroundedCoverage =
+    !!aiDraft?.generated &&
+    Object.values(aiDraft.confidence).every(confidenceValue => confidenceValue <= 0)
+  const selectedOutcomeType = watchedFields.type ?? defaultEvolutionType
+  const closesHospitalization =
+    selectedOutcomeType === dischargeTypeId || selectedOutcomeType === deceasedTypeId
 
   const onSubmit = async (data: EvolutionFormData) => {
     if (aiDraft?.generated && !aiDraft.reviewConfirmed) {
@@ -249,11 +264,20 @@ export const EvolutionForm = ({
       return
     }
 
+    if (allowOutcomeSelection && closingOutcomeTypeIds.has(data.type)) {
+      const userConfirmedClose = window.confirm(
+        'Confirmar desfecho de alta/óbito? Essa ação encerra a internação atual e remove o paciente da lista de pendentes.'
+      )
+      if (!userConfirmedClose) {
+        return
+      }
+    }
+
     const formData = new FormData()
     const description = buildSbarDescription(data)
 
     formData.append('description', description)
-    formData.append('action_type', defaultEvolutionType)
+    formData.append('action_type', data.type)
     formData.append('sbar_situation', data.situation.trim())
     appendIfFilled(formData, 'sbar_background', data.background)
     formData.append('sbar_assessment', data.assessment.trim())
@@ -394,6 +418,37 @@ export const EvolutionForm = ({
                 Ditado usa recurso do navegador; o Strivium não armazena áudio.
               </Typography>
             )}
+            <Controller
+              name="type"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  select
+                  fullWidth
+                  variant="filled"
+                  label="Desfecho da internação"
+                  {...field}
+                  value={field.value ?? defaultEvolutionType}
+                  disabled={isPending || !allowOutcomeSelection}
+                  error={!!errors.type}
+                  helperText={errors.type?.message}
+                  sx={{ mt: 2 }}
+                >
+                  {typeOptions.map(option => (
+                    <MenuItem key={option.id} value={option.id}>
+                      {option.id === defaultEvolutionType && 'Manter internado (visita)'}
+                      {option.id === dischargeTypeId && 'Alta hospitalar'}
+                      {option.id === deceasedTypeId && 'Óbito'}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              )}
+            />
+            {closesHospitalization && (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                Salvar essa evolução com desfecho de alta ou óbito encerra a internação atual e o paciente sai da lista de pendentes.
+              </Alert>
+            )}
           </Box>
 
           {aiDictationEnabled && (
@@ -422,6 +477,9 @@ export const EvolutionForm = ({
                     <Typography fontSize={13}>
                       Compare os campos com o texto bruto e confirme a revisão médica antes de salvar.
                     </Typography>
+                    <Typography fontSize={12} color="text.secondary" sx={{ mt: 0.5 }}>
+                      Percentuais indicam cobertura factual do texto bruto em cada campo SBAR.
+                    </Typography>
                   </Box>
                   <Stack direction="row" gap={0.75} flexWrap="wrap">
                     <Chip label={`S ${confidencePercent(aiDraft.confidence.situation)}`} size="small" />
@@ -439,6 +497,11 @@ export const EvolutionForm = ({
                 {!!aiDraft.missingInformation.length && (
                   <Typography fontSize={13}>
                     Ausentes/ambíguas: {aiDraft.missingInformation.join(' · ')}
+                  </Typography>
+                )}
+                {hasNoGroundedCoverage && (
+                  <Typography fontSize={13}>
+                    O rascunho não teve cobertura factual suficiente no ditado. Revise e preencha manualmente antes de salvar.
                   </Typography>
                 )}
                 {aiReviewError && (

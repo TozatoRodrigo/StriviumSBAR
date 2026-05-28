@@ -1,8 +1,11 @@
 from fastapi import APIRouter
 
 from .core.environment import envs
+from .modules.health.routes import router as health_router
 
 router = APIRouter()
+
+router.include_router(health_router)
 
 if not envs.APP_MODULE or envs.APP_MODULE == "user":
     from .modules.user.routes import router as user_router

@@ -8,10 +8,6 @@ from app.modules.sbar.services.ollama_sbar_extractor import OllamaSbarExtractor
 from app.tests.tenant import create_tenant_access_token
 
 client = TestClient(app)
-CONFIDENCE_SITUATION = 0.8
-CONFIDENCE_ASSESSMENT = 0.9
-CONFIDENCE_RECOMMENDATION = 0.7
-CONFIDENCE_PLAN = 0.7
 
 
 def test_extract_sbar_returns_valid_fallback_json_when_ai_is_disabled(
@@ -61,32 +57,48 @@ def test_extract_sbar_returns_valid_json_for_empty_transcript() -> None:
     assert data["confidence"]["situation"] == 0
 
 
-def test_extract_sbar_normalizes_confidence_from_zero_to_ten_scale() -> None:
+def test_extract_sbar_discards_non_grounded_content_and_recalculates_confidence() -> None:
+    transcript = (
+        "Paciente com dor abdominal e febre, recebeu analgésico e antibiótico. "
+        "Reavaliar amanhã com raio x."
+    )
     raw_response = {
         "message": {
             "content": {
-                "situation": "Paciente estável.",
-                "background": "",
-                "assessment": "Sem febre, nega dor.",
-                "recommendation": "Manter conduta.",
-                "plan": "Reavaliar amanhã.",
+                "situation": {
+                    "value": "Paciente com sepse grave.",
+                    "evidence": ["Paciente com sepse grave"],
+                },
+                "background": {"value": "", "evidence": []},
+                "assessment": {
+                    "value": "Recebeu analgésico e antibiótico.",
+                    "evidence": ["recebeu analgésico e antibiótico"],
+                },
+                "recommendation": {
+                    "value": "Manter conduta.",
+                    "evidence": ["antibiótico"],
+                },
+                "plan": {
+                    "value": "Reavaliar amanhã com raio x.",
+                    "evidence": ["Reavaliar amanhã com raio x"],
+                },
                 "missing_information": [],
                 "warnings": [],
-                "confidence": {
-                    "situation": 8,
-                    "background": 0,
-                    "assessment": 9,
-                    "recommendation": 0.7,
-                    "plan": 7,
-                },
             }
         }
     }
 
-    data = OllamaSbarExtractor.parse_ollama_response(raw_response)
+    data = OllamaSbarExtractor.parse_ollama_response(raw_response, transcript)
 
-    assert data.confidence.situation == CONFIDENCE_SITUATION
+    assert not data.situation
+    assert data.assessment
+    assert data.plan
+    assert (
+        "Situação: conteúdo removido por não estar explícito no ditado."
+        in data.warnings
+    )
+    assert data.confidence.situation == 0
     assert data.confidence.background == 0
-    assert data.confidence.assessment == CONFIDENCE_ASSESSMENT
-    assert data.confidence.recommendation == CONFIDENCE_RECOMMENDATION
-    assert data.confidence.plan == CONFIDENCE_PLAN
+    assert data.confidence.assessment > 0
+    assert data.confidence.recommendation > 0
+    assert data.confidence.plan > 0

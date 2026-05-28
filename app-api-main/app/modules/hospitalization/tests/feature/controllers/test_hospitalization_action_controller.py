@@ -7,6 +7,7 @@ from app.enums.models.hospitalization_action_status_enums import (
     HospitalizationActionStatus,
 )
 from app.enums.models.hospitalization_action_type_enums import HospitalizationActionType
+from app.enums.models.hospitalization_status_enums import HospitalizationStatus
 from app.main import app
 from app.tests.hospitalization import create_hospitalization
 from app.tests.hospitalization_action import create_hospitalization_action
@@ -44,6 +45,102 @@ def test_create_hospitalization_action_should_return_201_when_valid() -> None:
     assert data["description"] == data["description"]
     assert data["status"] == HospitalizationActionStatus.COMPLETED.value
     assert data["type"] == HospitalizationActionType.HOSPITALIZATION_VISIT.value
+
+
+def test_create_hospitalization_discharge_action_should_close_hospitalization() -> None:
+    hospitalization = create_hospitalization()
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": hospitalization.tenant_id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+    data = {
+        "description": "Paciente com alta clínica e orientações completas.",
+        "action_type": HospitalizationActionType.HOSPITALIZATION_DISCHARGE.value,
+    }
+
+    response = client.post(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions",
+        headers=headers,
+        data=data,
+    )
+    hospitalization_response = client.get(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}",
+        headers=headers,
+    )
+    pendings_response = client.get(
+        "/hospitalization/v1/hospitalizations/pendings",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert hospitalization_response.status_code == status.HTTP_200_OK
+    assert pendings_response.status_code == status.HTTP_200_OK
+    assert (
+        hospitalization_response.json()["status"]
+        == HospitalizationStatus.DISCHARGED.value
+    )
+    assert str(hospitalization.id) not in {
+        item["id"] for item in pendings_response.json()["data"]
+    }
+
+
+def test_create_hospitalization_deceased_action_should_close_hospitalization() -> None:
+    hospitalization = create_hospitalization()
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": hospitalization.tenant_id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+    data = {
+        "description": "Óbito confirmado pela equipe plantonista.",
+        "action_type": HospitalizationActionType.HOSPITALIZATION_DECEASED.value,
+    }
+
+    response = client.post(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions",
+        headers=headers,
+        data=data,
+    )
+    hospitalization_response = client.get(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}",
+        headers=headers,
+    )
+    pendings_response = client.get(
+        "/hospitalization/v1/hospitalizations/pendings",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert hospitalization_response.status_code == status.HTTP_200_OK
+    assert pendings_response.status_code == status.HTTP_200_OK
+    assert (
+        hospitalization_response.json()["status"]
+        == HospitalizationStatus.DECEASED.value
+    )
+    assert str(hospitalization.id) not in {
+        item["id"] for item in pendings_response.json()["data"]
+    }
+
+
+def test_create_hospitalization_action_should_return_422_when_hospitalization_is_not_active() -> (
+    None
+):
+    hospitalization = create_hospitalization({"status": HospitalizationStatus.DISCHARGED})
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": hospitalization.tenant_id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+    data = {
+        "description": "Tentativa de nova evolução em internação encerrada.",
+        "action_type": HospitalizationActionType.HOSPITALIZATION_VISIT.value,
+    }
+
+    response = client.post(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}/hospitalization-actions",
+        headers=headers,
+        data=data,
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_create_hospitalization_action_with_sbar_should_return_201_when_valid() -> None:
@@ -212,6 +309,28 @@ def test_update_hospitalization_action_with_sbar_should_return_200_when_valid() 
     assert response_data["sbar"]["situation"] == data["sbar_situation"]
     assert response_data["sbar"]["priority"] == data["sbar_priority"]
     assert response_data["sbar"]["clinical_course"] == data["sbar_clinical_course"]
+
+
+def test_update_hospitalization_action_should_return_422_when_action_type_changes() -> (
+    None
+):
+    hospitalization_action = create_hospitalization_action()
+    tenant_access_token = create_tenant_access_token(
+        {"tenant_id": hospitalization_action.tenant_id}
+    )
+    headers = {"Authorization": f"Bearer {tenant_access_token}"}
+    data = {
+        "description": "Edição com tentativa de trocar desfecho.",
+        "action_type": HospitalizationActionType.HOSPITALIZATION_DISCHARGE.value,
+    }
+
+    response = client.put(
+        f"/hospitalization/v1/hospitalizations/{hospitalization_action.hospitalization_id}/hospitalization-actions/{hospitalization_action.id}",
+        headers=headers,
+        data=data,
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_paginate_hospitalization_actions_should_return_200_when_valid() -> None:

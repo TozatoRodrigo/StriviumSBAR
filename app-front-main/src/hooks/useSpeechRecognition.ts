@@ -21,7 +21,7 @@ const getSpeechRecognitionConstructor = () => {
 
 const mapSpeechRecognitionError = (error?: string) => {
   if (error === 'not-allowed' || error === 'service-not-allowed') {
-    return 'Permissão do microfone negada.'
+    return 'Permissão do microfone/ditado negada. Ative em Ajustes > Privacidade e Segurança > Microfone e Reconhecimento de Fala.'
   }
 
   if (error === 'no-speech') {

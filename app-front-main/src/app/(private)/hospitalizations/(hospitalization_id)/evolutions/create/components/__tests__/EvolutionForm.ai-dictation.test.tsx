@@ -85,6 +85,11 @@ describe('EvolutionForm AI dictation', () => {
     expect(screen.getByLabelText('Plano')).toHaveValue('Reavaliar amanhã.')
     expect(screen.getByText(/Ausentes\/ambíguas:/i)).toBeInTheDocument()
     expect(screen.getByText(/Atenções:/i)).toBeInTheDocument()
+    expect(screen.getByText('S 91%')).toBeInTheDocument()
+    expect(screen.getByText('A 82%')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Percentuais indicam cobertura factual do texto bruto em cada campo SBAR\./i)
+    ).toBeInTheDocument()
 
     fireEvent.submit(document.getElementById(EvolutionForm.id)!)
 

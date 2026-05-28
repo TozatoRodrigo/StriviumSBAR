@@ -125,5 +125,71 @@ describe('EvolutionForm voice dictation', () => {
     const payload = submitAction.mock.calls[0][0] as FormData
     expect(payload.get('files')).toBeNull()
     expect(payload.get('sbar_situation')).toBe('Paciente em avaliação')
+    expect(payload.get('action_type')).toBe('hospitalization_visit')
+  })
+
+  it('submits hospitalization_discharge when outcome is Alta hospitalar', async () => {
+    vi.stubEnv('NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION', 'false')
+    const submitAction = vi.fn()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const user = userEvent.setup()
+
+    render(<EvolutionForm isPending={false} submitAction={submitAction} initialData={requiredInitialData} />)
+
+    await user.click(screen.getByRole('combobox', { name: 'Desfecho da internação' }))
+    await user.click(screen.getByRole('option', { name: 'Alta hospitalar' }))
+    fireEvent.submit(document.getElementById(EvolutionForm.id)!)
+
+    await waitFor(() => expect(submitAction).toHaveBeenCalledTimes(1))
+    const payload = submitAction.mock.calls[0][0] as FormData
+    expect(payload.get('action_type')).toBe('hospitalization_discharge')
+  })
+
+  it('submits hospitalization_deceased when outcome is Óbito', async () => {
+    vi.stubEnv('NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION', 'false')
+    const submitAction = vi.fn()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const user = userEvent.setup()
+
+    render(<EvolutionForm isPending={false} submitAction={submitAction} initialData={requiredInitialData} />)
+
+    await user.click(screen.getByRole('combobox', { name: 'Desfecho da internação' }))
+    await user.click(screen.getByRole('option', { name: 'Óbito' }))
+    fireEvent.submit(document.getElementById(EvolutionForm.id)!)
+
+    await waitFor(() => expect(submitAction).toHaveBeenCalledTimes(1))
+    const payload = submitAction.mock.calls[0][0] as FormData
+    expect(payload.get('action_type')).toBe('hospitalization_deceased')
+  })
+
+  it('does not submit when closing outcome is not confirmed', async () => {
+    vi.stubEnv('NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION', 'false')
+    const submitAction = vi.fn()
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const user = userEvent.setup()
+
+    render(<EvolutionForm isPending={false} submitAction={submitAction} initialData={requiredInitialData} />)
+
+    await user.click(screen.getByRole('combobox', { name: 'Desfecho da internação' }))
+    await user.click(screen.getByRole('option', { name: 'Alta hospitalar' }))
+    fireEvent.submit(document.getElementById(EvolutionForm.id)!)
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1))
+    expect(submitAction).not.toHaveBeenCalled()
+  })
+
+  it('keeps outcome selector disabled when editing evolution', () => {
+    vi.stubEnv('NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION', 'false')
+
+    render(
+      <EvolutionForm
+        isPending={false}
+        submitAction={vi.fn()}
+        initialData={requiredInitialData}
+        allowOutcomeSelection={false}
+      />
+    )
+
+    expect(screen.getByRole('combobox', { name: 'Desfecho da internação' })).toBeDisabled()
   })
 })

@@ -37,6 +37,9 @@ AI_REVIEW_REQUIRED_MESSAGE = "Rascunho SBAR gerado por IA exige revisão médica
 AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE = (
     "Transcrição bruta é obrigatória para SBAR gerado por IA"
 )
+HOSPITALIZATION_NOT_ACTIVE_MESSAGE = (
+    "Não é possível registrar evolução em uma internação encerrada"
+)
 
 
 class CreateHospitalizationActionUseCase:
@@ -70,6 +73,7 @@ class CreateHospitalizationActionUseCase:
         hospitalization = self.hospitalization_repository.get(entity.hospitalization_id)
         if hospitalization is None:
             raise HospitalizationNotFoundError(entity.hospitalization_id)
+        self.__validate_hospitalization_is_active(hospitalization.status)
 
         hospitalization_action = self.hospitalization_action_repository.create(entity)
         if hospitalization_action.type in {
@@ -122,3 +126,14 @@ class CreateHospitalizationActionUseCase:
                 AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE,
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
             )
+
+    @staticmethod
+    def __validate_hospitalization_is_active(
+        hospitalization_status: HospitalizationStatus,
+    ) -> None:
+        if hospitalization_status == HospitalizationStatus.ACTIVE:
+            return
+        raise ClientAwareError(
+            HOSPITALIZATION_NOT_ACTIVE_MESSAGE,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+        )

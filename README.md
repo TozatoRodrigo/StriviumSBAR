@@ -1,0 +1,61 @@
+# Strivium Platform Repository
+
+Monorepo segmentado para facilitar operação de produto web, backend e publicação mobile (App Store + Google Play).
+
+## Estrutura
+
+```txt
+Github_Strivium/
+  .github/workflows/          # CI/CD centralizado
+  docs/mobile-release/        # runbooks e checklist de publicação
+  app-front-main/             # frontend web + projeto mobile Capacitor (ios/android)
+  app-api-main/               # backend FastAPI
+```
+
+## Onde cada time atua
+
+- Web e mobile: `app-front-main`
+- Backend/API: `app-api-main`
+- Pipelines GitHub Actions: `.github/workflows`
+- Procedimento de loja: `docs/mobile-release`
+
+## Workflows oficiais
+
+- `mobile-ci.yml`: lint, testes e build do front.
+- `mobile-release.yml`: build/sign/deploy Android (AAB) e iOS (IPA/TestFlight).
+- `api-ci.yml`: testes, lint e auditoria do backend.
+
+> Observação: workflows em subpastas (`app-front-main/.github` e `app-api-main/.github`) foram descontinuados. O padrão oficial é usar apenas `.github/workflows` na raiz.
+
+## Handoff para publicação nas lojas
+
+1. Configurar secrets/variables:
+   - `docs/mobile-release/github-secrets-setup.md`
+2. Validar setup inicial:
+   - `docs/mobile-release/first-release-runbook.md`
+3. Executar release checklist:
+   - `docs/mobile-release/release-checklist.md`
+4. Publicar primeiro em:
+   - Google Play `internal`
+   - TestFlight internal
+
+## Comandos rápidos (a partir da raiz)
+
+Frontend:
+
+```bash
+cd app-front-main
+yarn lint
+yarn test
+yarn test:contracts:smoke
+yarn build
+```
+
+Backend:
+
+```bash
+cd app-api-main
+APP_ENV=testing poetry run pytest
+poetry run ruff check app
+poetry run ruff format --check app
+```
