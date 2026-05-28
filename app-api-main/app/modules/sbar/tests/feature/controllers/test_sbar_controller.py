@@ -57,7 +57,9 @@ def test_extract_sbar_returns_valid_json_for_empty_transcript() -> None:
     assert data["confidence"]["situation"] == 0
 
 
-def test_extract_sbar_discards_non_grounded_content_and_recalculates_confidence() -> None:
+def test_extract_sbar_discards_non_grounded_content_and_recalculates_confidence() -> (
+    None
+):
     transcript = (
         "Paciente com dor abdominal e febre, recebeu analgésico e antibiótico. "
         "Reavaliar amanhã com raio x."

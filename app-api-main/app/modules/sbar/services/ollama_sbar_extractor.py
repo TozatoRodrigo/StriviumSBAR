@@ -135,9 +135,7 @@ class OllamaSbarExtractor:
                 timeout=self.timeout_seconds,
             )
             response.raise_for_status()
-            return self._parse_ollama_response(
-                response.json(), normalized_transcript
-            )
+            return self._parse_ollama_response(response.json(), normalized_transcript)
         except Exception:
             log.exception("SBAR extraction failed")
             return SbarExtractResponse.fallback(
@@ -222,9 +220,7 @@ class OllamaSbarExtractor:
         return {**data, "confidence": normalized_confidence}
 
     @staticmethod
-    def _build_grounded_response(
-        data: Any, transcript: str
-    ) -> SbarExtractResponse:
+    def _build_grounded_response(data: Any, transcript: str) -> SbarExtractResponse:
         parsed = OllamaSbarExtractor._coerce_response_payload(data)
         normalized_transcript = OllamaSbarExtractor._normalize_text(transcript)
         warnings = parsed["warnings"].copy()
@@ -290,9 +286,7 @@ class OllamaSbarExtractor:
             raw_field = normalized_legacy.get(field)
             if isinstance(raw_field, dict):
                 payload[field] = {
-                    "value": OllamaSbarExtractor._coerce_string(
-                        raw_field.get("value")
-                    ),
+                    "value": OllamaSbarExtractor._coerce_string(raw_field.get("value")),
                     "evidence": OllamaSbarExtractor._coerce_string_list(
                         raw_field.get("evidence")
                     ),
@@ -329,9 +323,7 @@ class OllamaSbarExtractor:
         grounded_fallback = [
             part
             for part in fallback_parts
-            if OllamaSbarExtractor._is_fragment_grounded(
-                part, normalized_transcript
-            )
+            if OllamaSbarExtractor._is_fragment_grounded(part, normalized_transcript)
         ]
         return OllamaSbarExtractor._deduplicate_strings(grounded_fallback)
 
@@ -388,7 +380,9 @@ class OllamaSbarExtractor:
     def _coerce_string_list(value: Any) -> list[str]:
         if not isinstance(value, list):
             return []
-        return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+        return [
+            item.strip() for item in value if isinstance(item, str) and item.strip()
+        ]
 
     @staticmethod
     def _deduplicate_strings(values: list[str]) -> list[str]:

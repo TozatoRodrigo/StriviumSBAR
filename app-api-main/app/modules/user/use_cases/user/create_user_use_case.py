@@ -34,6 +34,8 @@ class CreateUserUseCase:
             raise UserAlreadyExistsError.for_email()
 
         if user_data.document:
-            existing_document = self.user_repository.find_by_document(user_data.document)
+            existing_document = self.user_repository.find_by_document(
+                user_data.document
+            )
             if existing_document is not None:
                 raise UserAlreadyExistsError.for_document()

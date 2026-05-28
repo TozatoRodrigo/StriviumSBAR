@@ -124,7 +124,9 @@ def test_create_hospitalization_deceased_action_should_close_hospitalization() -
 def test_create_hospitalization_action_should_return_422_when_hospitalization_is_not_active() -> (
     None
 ):
-    hospitalization = create_hospitalization({"status": HospitalizationStatus.DISCHARGED})
+    hospitalization = create_hospitalization(
+        {"status": HospitalizationStatus.DISCHARGED}
+    )
     tenant_access_token = create_tenant_access_token(
         {"tenant_id": hospitalization.tenant_id}
     )
