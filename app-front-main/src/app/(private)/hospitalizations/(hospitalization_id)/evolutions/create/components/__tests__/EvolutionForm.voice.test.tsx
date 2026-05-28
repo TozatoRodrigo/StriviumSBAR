@@ -190,6 +190,9 @@ describe('EvolutionForm voice dictation', () => {
       />
     )
 
-    expect(screen.getByRole('combobox', { name: 'Desfecho da internação' })).toBeDisabled()
+    expect(screen.getByRole('combobox', { name: 'Desfecho da internação' })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
   })
 })
