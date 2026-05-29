@@ -15,30 +15,30 @@ For the first release setup, follow [first-release-runbook.md](./first-release-r
 
 ## Production Environment
 
-- [ ] `NEXT_PUBLIC_API_URL=https://api.link.strivium.com.br`.
+- [ ] `NEXT_PUBLIC_API_URL=https://strivium.link.servidortozato.cloud/api`.
 - [ ] `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is a production Cloudflare Turnstile site key.
 - [ ] `NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION=false`.
 - [ ] `NEXT_PUBLIC_EXPERIMENTAL_SBAR_AI_DICTATION=false`.
 - [ ] `CAPACITOR_LIVE_RELOAD` is unset or `false`.
-- [ ] Backend runs over HTTPS and `GET /health` returns `{"status":"ok"}`.
-- [ ] Backend CORS includes `https://link.strivium.com.br` and `capacitor://localhost`.
+- [ ] Backend runs over HTTPS and `GET https://strivium.link.servidortozato.cloud/api/health` returns `{"status":"ok"}` after the current backend code is deployed.
+- [ ] Backend CORS includes `https://strivium.link.servidortozato.cloud` and `capacitor://localhost`.
 - [ ] Backend `ENABLE_DOCS=false`, `FILESYSTEM_DRIVER=s3`, SMTP configured, and backups enabled.
 
 ## GitHub Secrets and Variables
 
 - [ ] Variable `NEXT_PUBLIC_API_URL`.
 - [ ] Variable `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
-- [ ] Secret `ANDROID_KEYSTORE_BASE64`.
-- [ ] Secret `ANDROID_KEYSTORE_PASSWORD`.
-- [ ] Secret `ANDROID_KEY_ALIAS`.
-- [ ] Secret `ANDROID_KEY_PASSWORD`.
-- [ ] Secret `GOOGLE_PLAY_CREDENTIALS`.
-- [ ] Secret `MATCH_GIT_URL`.
-- [ ] Secret `MATCH_PASSWORD`.
-- [ ] Secret `MATCH_GIT_PRIVATE_KEY` or `MATCH_GIT_PRIVATE_KEY_BASE64` or `MATCH_GIT_BASIC_AUTHORIZATION`.
-- [ ] Secret `APP_STORE_CONNECT_API_KEY_KEY_ID`.
-- [ ] Secret `APP_STORE_CONNECT_API_KEY_ISSUER_ID`.
-- [ ] Secret `APP_STORE_CONNECT_API_KEY_KEY`.
+- [ ] For iOS: `MATCH_GIT_URL`.
+- [ ] For iOS: `MATCH_PASSWORD`.
+- [ ] For iOS: `MATCH_GIT_PRIVATE_KEY` or `MATCH_GIT_PRIVATE_KEY_BASE64` or `MATCH_GIT_BASIC_AUTHORIZATION`.
+- [ ] For iOS: `APP_STORE_CONNECT_API_KEY_KEY_ID`.
+- [ ] For iOS: `APP_STORE_CONNECT_API_KEY_ISSUER_ID`.
+- [ ] For iOS: `APP_STORE_CONNECT_API_KEY_KEY`.
+- [ ] For Android: `ANDROID_KEYSTORE_BASE64`.
+- [ ] For Android: `ANDROID_KEYSTORE_PASSWORD`.
+- [ ] For Android: `ANDROID_KEY_ALIAS`.
+- [ ] For Android: `ANDROID_KEY_PASSWORD`.
+- [ ] For Android: `GOOGLE_PLAY_CREDENTIALS`.
 
 ## Build Gates
 

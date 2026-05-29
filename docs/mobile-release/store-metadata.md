@@ -33,6 +33,8 @@ saude, hospital, internacao, paciente, equipe medica, evolucao, gestao clinica, 
 
 ## Support and Policy URLs
 
-- Support URL: `https://link.strivium.com.br/suporte`
-- Privacy Policy URL: `https://link.strivium.com.br/privacidade`
-- Account deletion/data request URL: `https://link.strivium.com.br/privacidade#direitos`
+- Support URL: `https://strivium.link.servidortozato.cloud/suporte`
+- Privacy Policy URL: `https://strivium.link.servidortozato.cloud/privacidade`
+- Account deletion/data request URL: `https://strivium.link.servidortozato.cloud/privacidade#direitos`
+
+These URLs must be publicly available before App Store review. If the final branded domain changes, update this file and the App Store Connect metadata before submission.

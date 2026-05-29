@@ -10,6 +10,15 @@ on:
         description: "Release version, for example 1.0.0"
         required: true
         type: string
+      release_target:
+        description: "Platforms to build and deploy"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - ios
+          - android
       google_play_track:
         description: "Google Play track"
         required: true
@@ -25,7 +34,7 @@ permissions:
   contents: read
 
 env:
-  NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://api.link.strivium.com.br' }}
+  NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL || 'https://strivium.link.servidortozato.cloud/api' }}
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
   NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION: "false"
   NEXT_PUBLIC_EXPERIMENTAL_SBAR_AI_DICTATION: "false"
@@ -53,6 +62,7 @@ jobs:
       APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
       APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
       APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}
+      RELEASE_TARGET: ${{ inputs.release_target || 'all' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -66,15 +76,19 @@ jobs:
         run: node scripts/release/assert-ci-secrets.mjs build-web
 
       - name: Validate Android build secrets
+        if: env.RELEASE_TARGET == 'all' || env.RELEASE_TARGET == 'android'
         run: node scripts/release/assert-ci-secrets.mjs android-build
 
       - name: Validate iOS build secrets
+        if: env.RELEASE_TARGET == 'all' || env.RELEASE_TARGET == 'ios'
         run: node scripts/release/assert-ci-secrets.mjs ios-build
 
       - name: Validate Android deploy secrets
+        if: env.RELEASE_TARGET == 'all' || env.RELEASE_TARGET == 'android'
         run: node scripts/release/assert-ci-secrets.mjs android-deploy
 
       - name: Validate iOS deploy secrets
+        if: env.RELEASE_TARGET == 'all' || env.RELEASE_TARGET == 'ios'
         run: node scripts/release/assert-ci-secrets.mjs ios-deploy
 
   build-web:
@@ -114,6 +128,7 @@ jobs:
   build-android:
     name: Build Android AAB
     needs: build-web
+    if: ${{ (inputs.release_target || 'all') == 'all' || (inputs.release_target || 'all') == 'android' }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     defaults:
@@ -171,6 +186,7 @@ jobs:
   build-ios:
     name: Build iOS IPA
     needs: build-web
+    if: ${{ (inputs.release_target || 'all') == 'all' || (inputs.release_target || 'all') == 'ios' }}
     runs-on: macos-latest
     timeout-minutes: 45
     defaults:
@@ -231,6 +247,7 @@ jobs:
   deploy-android-internal:
     name: Deploy Android to Google Play
     needs: build-android
+    if: ${{ (inputs.release_target || 'all') == 'all' || (inputs.release_target || 'all') == 'android' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: production
@@ -263,6 +280,7 @@ jobs:
   deploy-ios-testflight:
     name: Deploy iOS to TestFlight
     needs: build-ios
+    if: ${{ (inputs.release_target || 'all') == 'all' || (inputs.release_target || 'all') == 'ios' }}
     runs-on: macos-latest
     timeout-minutes: 20
     environment: production

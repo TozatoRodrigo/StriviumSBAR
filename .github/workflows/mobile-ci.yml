@@ -24,7 +24,7 @@ jobs:
       run:
         working-directory: app-front-main
     env:
-      NEXT_PUBLIC_API_URL: https://api.link.strivium.com.br
+      NEXT_PUBLIC_API_URL: https://strivium.link.servidortozato.cloud/api
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: 0x4AAAAA-ci-placeholder
       ALLOW_PLACEHOLDER_TURNSTILE_SITE_KEY: "true"
       NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION: "false"

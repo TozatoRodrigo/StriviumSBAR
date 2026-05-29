@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { validateProductionEnv } from '../assert-production-env.mjs'
 
 const validEnv = {
-  NEXT_PUBLIC_API_URL: 'https://api.link.strivium.com.br',
+  NEXT_PUBLIC_API_URL: 'https://strivium.link.servidortozato.cloud/api',
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: '0x4AAAAA-production-key',
   NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION: 'false',
   NEXT_PUBLIC_EXPERIMENTAL_SBAR_AI_DICTATION: 'false',

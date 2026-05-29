@@ -6,7 +6,7 @@ Use this guide to prepare the exact values required by `.github/workflows/mobile
 
 Create repository variables:
 
-- `NEXT_PUBLIC_API_URL`: `https://api.link.strivium.com.br`
+- `NEXT_PUBLIC_API_URL`: `https://strivium.link.servidortozato.cloud/api`
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`: production Cloudflare Turnstile site key
 
 ## Android secrets
@@ -66,6 +66,10 @@ base64 -i /absolute/path/to/AuthKey_XXXXXXXXXX.p8 | tr -d '\n'
 ## Quick verification
 
 After adding variables/secrets, trigger `Mobile Release` manually and confirm the `Validate CI secrets` job passes first.
+
+For App Store/TestFlight only, choose `release_target=ios`. In this mode Android keystore and Google Play secrets are not required.
+
+For Google Play only, choose `release_target=android`. In this mode iOS signing secrets are not required.
 
 ## Optional bootstrap command
 

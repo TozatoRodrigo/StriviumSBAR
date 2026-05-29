@@ -7,6 +7,7 @@ function parseArgs(argv) {
     dryRun: false,
     repo: undefined,
     versionName: undefined,
+    releaseTarget: 'all',
     googlePlayTrack: 'internal',
   }
 
@@ -20,6 +21,9 @@ function parseArgs(argv) {
       index += 1
     } else if (value === '--version-name') {
       args.versionName = argv[index + 1]
+      index += 1
+    } else if (value === '--release-target') {
+      args.releaseTarget = argv[index + 1]
       index += 1
     } else if (value === '--google-play-track') {
       args.googlePlayTrack = argv[index + 1]
@@ -89,18 +93,26 @@ function runGhCommand(commandArgs) {
 
 function printUsage() {
   console.log(
-    'Usage: node scripts/release/run-mobile-release.mjs --version-name 1.0.0 [--google-play-track internal|alpha|beta|production] [--repo owner/name] [--dry-run]',
+    'Usage: node scripts/release/run-mobile-release.mjs --version-name 1.0.0 [--release-target all|ios|android] [--google-play-track internal|alpha|beta|production] [--repo owner/name] [--dry-run]',
   )
 }
 
 export function runMobileRelease({
   versionName,
+  releaseTarget = 'all',
   googlePlayTrack = 'internal',
   repo = undefined,
   dryRun = false,
 } = {}) {
   if (!versionName || versionName.trim() === '') {
     throw new Error('Missing --version-name.')
+  }
+
+  const validTargets = ['all', 'ios', 'android']
+  if (!validTargets.includes(releaseTarget)) {
+    throw new Error(
+      `Invalid --release-target "${releaseTarget}". Expected one of: ${validTargets.join(', ')}`,
+    )
   }
 
   const validTracks = ['internal', 'alpha', 'beta', 'production']
@@ -120,6 +132,8 @@ export function runMobileRelease({
     '--field',
     `version_name=${versionName}`,
     '--field',
+    `release_target=${releaseTarget}`,
+    '--field',
     `google_play_track=${googlePlayTrack}`,
   ]
 
@@ -130,7 +144,9 @@ export function runMobileRelease({
 
   ensureGhIsAuthenticated()
   runGhCommand(ghArgs)
-  console.log(`Mobile Release workflow triggered for ${repoFullName} (version ${versionName}, track ${googlePlayTrack}).`)
+  console.log(
+    `Mobile Release workflow triggered for ${repoFullName} (version ${versionName}, target ${releaseTarget}, track ${googlePlayTrack}).`,
+  )
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -143,6 +159,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
     runMobileRelease({
       versionName: args.versionName,
+      releaseTarget: args.releaseTarget,
       googlePlayTrack: args.googlePlayTrack,
       repo: args.repo,
       dryRun: args.dryRun,

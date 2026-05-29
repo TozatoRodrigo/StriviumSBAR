@@ -29,15 +29,28 @@ Github_Strivium/
 
 ## Handoff para publicação nas lojas
 
-1. Configurar secrets/variables:
+Comece por aqui ao enviar para os desenvolvedores:
+
+1. Visão geral do release mobile:
+   - `docs/mobile-release/README.md`
+2. Handoff específico para App Store/TestFlight:
+   - `docs/mobile-release/app-store-handoff.md`
+3. Configurar secrets/variables:
    - `docs/mobile-release/github-secrets-setup.md`
-2. Validar setup inicial:
+4. Validar setup inicial:
    - `docs/mobile-release/first-release-runbook.md`
-3. Executar release checklist:
+5. Executar release checklist:
    - `docs/mobile-release/release-checklist.md`
-4. Publicar primeiro em:
+6. Publicar primeiro em:
    - Google Play `internal`
    - TestFlight internal
+
+Configuração atual de produção para o app mobile:
+
+- App/bundle id: `br.com.strivium.link`
+- Web atual: `https://strivium.link.servidortozato.cloud/signin`
+- API atual para builds mobile: `https://strivium.link.servidortozato.cloud/api`
+- Build de loja: não usar `CAPACITOR_SERVER_URL`; esse modo é só para teste manual remoto.
 
 ## Comandos rápidos (a partir da raiz)
 

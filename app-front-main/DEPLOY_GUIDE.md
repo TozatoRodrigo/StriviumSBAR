@@ -8,7 +8,7 @@ Este guia cobre a publicação mobile do Strivium Link com os workflows da raiz:
 ## 1) Pré-requisitos
 
 - App Apple e app Google Play criados com `br.com.strivium.link`.
-- API de produção ativa em `https://api.link.strivium.com.br`.
+- API de produção ativa em `https://strivium.link.servidortozato.cloud/api`.
 - Conta demo de revisão pronta (dados fictícios).
 
 ## 2) Configurar variáveis e secrets no GitHub
@@ -49,13 +49,14 @@ Pelo GitHub Actions:
 
 - `Actions > Mobile Release > Run workflow`
 - `version_name`: ex. `1.0.0`
+- `release_target`: `ios`, `android` ou `all`
 - `google_play_track`: `internal`
 
 Ou por CLI:
 
 ```bash
 cd app-front-main
-yarn release:github:run --version-name 1.0.0 --google-play-track internal
+yarn release:github:run --version-name 1.0.0 --release-target ios
 ```
 
 ## 5) Validar resultado
@@ -65,11 +66,9 @@ Use:
 - [release-checklist.md](../docs/mobile-release/release-checklist.md)
 - [first-release-runbook.md](../docs/mobile-release/first-release-runbook.md)
 
-Ordem esperada:
+Ordem esperada para App Store/TestFlight (`release_target=ios`):
 
 1. `Validate CI secrets`
 2. `Build web export`
-3. `Build Android AAB`
-4. `Build iOS IPA`
-5. `Deploy Android to Google Play`
-6. `Deploy iOS to TestFlight`
+3. `Build iOS IPA`
+4. `Deploy iOS to TestFlight`
