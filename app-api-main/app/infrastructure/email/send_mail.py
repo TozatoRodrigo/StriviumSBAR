@@ -14,6 +14,7 @@ class SendMail:
         self.username = envs.MAIL_USERNAME
         self.password = envs.MAIL_PASSWORD
         self.from_email = envs.MAIL_FROM
+        self.use_tls = envs.MAIL_USE_TLS
 
     def send(self, send_mail_dto: SendMailDTO) -> None:
         self.__validate_envs()
@@ -44,7 +45,7 @@ class SendMail:
                 recipients.extend(send_mail_dto.bcc)
 
             with smtplib.SMTP(self.host, self.port) as server:
-                if envs.MAIL_USE_TLS:
+                if self.use_tls:
                     server.starttls()
                 server.login(self.username, self.password)
 
@@ -59,6 +60,7 @@ class SendMail:
             raise Exception(msg) from e
 
     def send_multiple(self, send_multiple_mail_dto: SendMultipleMailDTO) -> None:
+        self.__validate_envs()
         try:
             if send_multiple_mail_dto.html_body:
                 message = MIMEMultipart("alternative")
@@ -87,7 +89,7 @@ class SendMail:
                 recipients.extend(send_multiple_mail_dto.bcc)
 
             with smtplib.SMTP(self.host, self.port) as server:
-                if envs.SMTP_USE_TLS:
+                if self.use_tls:
                     server.starttls()
                 server.login(self.username, self.password)
 

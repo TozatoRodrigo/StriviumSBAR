@@ -50,7 +50,11 @@ export default function Create() {
         <TopBar.Back disabled={isPending} href={detailHref} />
         <TopBar.Title>Registrar visita</TopBar.Title>
       </TopBar>
-      <EvolutionForm submitAction={submitAction} isPending={isPending} />
+      <EvolutionForm
+        submitAction={submitAction}
+        isPending={isPending}
+        hospitalizationId={hospitalization_id ?? undefined}
+      />
       <BottomBar>
         <BottomBar.ActionOutlined LinkComponent={Link} href={detailHref} disabled={isPending}>
           Cancelar

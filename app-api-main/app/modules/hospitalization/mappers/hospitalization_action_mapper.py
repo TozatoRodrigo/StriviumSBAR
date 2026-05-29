@@ -1,3 +1,4 @@
+import json
 from uuid import UUID
 
 from fastapi_pagination import Page
@@ -5,6 +6,7 @@ from fastapi_pagination import Page
 from app.enums.models.hospitalization_action_status_enums import (
     HospitalizationActionStatus,
 )
+from app.exceptions.validation_error import ValidationError
 from app.filesystem.filesystem import Filesystem
 from app.models.hospitalization_action import HospitalizationAction
 from app.models.hospitalization_action_sbar import HospitalizationActionSbar
@@ -68,10 +70,23 @@ class HospitalizationActionMapper:
             background=hospitalization_action_data.sbar_background,
             assessment=hospitalization_action_data.sbar_assessment or "",
             recommendation=hospitalization_action_data.sbar_recommendation or "",
+            plan=hospitalization_action_data.sbar_plan,
             priority=hospitalization_action_data.sbar_priority,
             clinical_course=hospitalization_action_data.sbar_clinical_course,
             pending_items=hospitalization_action_data.sbar_pending_items,
             alerts=hospitalization_action_data.sbar_alerts,
+            source_transcript=hospitalization_action_data.sbar_source_transcript,
+            ai_generated=hospitalization_action_data.sbar_ai_generated,
+            ai_review_confirmed=hospitalization_action_data.sbar_ai_review_confirmed,
+            ai_warnings=HospitalizationActionMapper._parse_json_list(
+                hospitalization_action_data.sbar_ai_warnings
+            ),
+            ai_missing_information=HospitalizationActionMapper._parse_json_list(
+                hospitalization_action_data.sbar_ai_missing_information
+            ),
+            ai_confidence=HospitalizationActionMapper._parse_json_dict(
+                hospitalization_action_data.sbar_ai_confidence
+            ),
         )
 
     @staticmethod
@@ -107,10 +122,17 @@ class HospitalizationActionMapper:
                 background=hospitalization_action.sbar.background,
                 assessment=hospitalization_action.sbar.assessment,
                 recommendation=hospitalization_action.sbar.recommendation,
+                plan=hospitalization_action.sbar.plan,
                 priority=hospitalization_action.sbar.priority,
                 clinical_course=hospitalization_action.sbar.clinical_course,
                 pending_items=hospitalization_action.sbar.pending_items,
                 alerts=hospitalization_action.sbar.alerts,
+                source_transcript=hospitalization_action.sbar.source_transcript,
+                ai_generated=hospitalization_action.sbar.ai_generated,
+                ai_review_confirmed=hospitalization_action.sbar.ai_review_confirmed,
+                ai_warnings=hospitalization_action.sbar.ai_warnings,
+                ai_missing_information=hospitalization_action.sbar.ai_missing_information,
+                ai_confidence=hospitalization_action.sbar.ai_confidence,
                 created_at=hospitalization_action.sbar.created_at,
                 updated_at=hospitalization_action.sbar.updated_at,
             )
@@ -144,3 +166,23 @@ class HospitalizationActionMapper:
             limit=pagination.size,
             total_pages=pagination.pages,
         )
+
+    @staticmethod
+    def _parse_json_list(value: str | None) -> list[str] | None:
+        if not value:
+            return None
+        parsed = json.loads(value)
+        if not isinstance(parsed, list):
+            message = "Expected JSON list"
+            raise ValidationError(message)
+        return [str(item) for item in parsed]
+
+    @staticmethod
+    def _parse_json_dict(value: str | None) -> dict[str, float] | None:
+        if not value:
+            return None
+        parsed = json.loads(value)
+        if not isinstance(parsed, dict):
+            message = "Expected JSON object"
+            raise ValidationError(message)
+        return {str(key): float(parsed[key]) for key in parsed}

@@ -16,3 +16,11 @@ class UserRepository(ABC):
     @abstractmethod
     def get_user_by_login(self, login: str) -> User | None:
         pass
+
+    @abstractmethod
+    def find_by_email(self, email: str) -> User | None:
+        pass
+
+    @abstractmethod
+    def find_by_document(self, document: str) -> User | None:
+        pass

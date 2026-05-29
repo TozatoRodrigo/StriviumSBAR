@@ -6,6 +6,7 @@ from app.models.user import User
 from app.modules.tenant_user.dtos.responses.tenant_user_invite.tenant_user_invite_response import (
     TenantUserInviteResponse,
 )
+from app.modules.tenant_user.exceptions.invalid_invite_error import InvalidInviteError
 from app.modules.tenant_user.mappers.tenant_user_invite_mapper import (
     TenantUserInviteMapper,
 )
@@ -36,10 +37,10 @@ class RejectInviteUseCase:
     def __validate_invite(self, tenant_user_invite: TenantUserInvite | None) -> None:
         if tenant_user_invite is None:
             msg = "Invite not found"
-            raise ValueError(msg)
+            raise InvalidInviteError(msg)
         if tenant_user_invite.status != TenantUserInviteStatusEnum.PENDING:
             msg = "Invite is not pending"
-            raise ValueError(msg)
+            raise InvalidInviteError(msg)
         if tenant_user_invite.email != self.current_user.email:
             msg = "Invite is not for the current user"
-            raise ValueError(msg)
+            raise InvalidInviteError(msg)

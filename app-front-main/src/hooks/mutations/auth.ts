@@ -45,3 +45,11 @@ export function useUserRefreshToken(onSuccess?: (data: UserRefreshTokenHttpRespo
     onSuccess,
   })
 }
+
+export function useLogoutMutation() {
+  return useMutation<void, Error, { refresh_token: string }>({
+    mutationFn: async ({ refresh_token }) => {
+      await api.post('/auth/v1/logout', { refresh_token })
+    },
+  })
+}

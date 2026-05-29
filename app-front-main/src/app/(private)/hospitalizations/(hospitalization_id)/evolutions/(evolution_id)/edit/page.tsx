@@ -66,9 +66,11 @@ export default function Edit() {
       </TopBar>
       {evolution && (
         <EvolutionForm
+          allowOutcomeSelection={false}
           submitAction={submitAction}
           isPending={isPending || isLoadingEvolution}
           initialData={evolution}
+          hospitalizationId={hospitalization_id ?? undefined}
         />
       )}
       <BottomBar>

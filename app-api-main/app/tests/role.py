@@ -10,3 +10,10 @@ def get_admin_role() -> Role:
         return session.exec(
             select(Role).where(Role.name == RolesNamesEnum.ADMIN)
         ).first()
+
+
+def get_doctor_role() -> Role:
+    with Session(engine) as session:
+        return session.exec(
+            select(Role).where(Role.name == RolesNamesEnum.DOCTOR)
+        ).first()

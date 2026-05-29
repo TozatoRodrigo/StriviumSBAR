@@ -1,0 +1,117 @@
+name: API CI
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "app-api-main/**"
+      - ".github/workflows/api-ci.yml"
+  pull_request:
+    paths:
+      - "app-api-main/**"
+      - ".github/workflows/api-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: app-api-main
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          architecture: x64
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-${{ hashFiles('app-api-main/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Run tests
+        run: APP_ENV=testing poetry run pytest
+
+  api-lint:
+    name: Lint and format
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: app-api-main
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          architecture: x64
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Check formatting
+        run: poetry run ruff format --check app
+
+      - name: Run Ruff lint
+        run: poetry run ruff check app
+
+  api-security:
+    name: Security audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: app-api-main
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          architecture: x64
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies
+        run: poetry install --no-root
+
+      - name: Install pip-audit
+        run: poetry run python -m pip install pip-audit
+
+      - name: Run pip-audit
+        run: |
+          # Temporary ignores while upstream dependencies are pinned by framework compatibility.
+          # Revisit regularly and remove once fixed versions are adopted in lockfile/framework.
+          poetry run python -m pip_audit \
+            --cache-dir /tmp/pip-audit-cache \
+            --ignore-vuln CVE-2026-45409 \
+            --ignore-vuln PYSEC-2026-161

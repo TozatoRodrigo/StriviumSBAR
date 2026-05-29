@@ -1,5 +1,8 @@
 from uuid import UUID
 
+from fastapi import status
+
+from app.exceptions.client_aware_error import ClientAwareError
 from app.models.tenant_user_invite import TenantUserInvite
 from app.modules.tenant_user.dtos.responses.tenant_user_invite.detailed_tenant_user_invite_response import (
     DetailedTenantUserInviteResponse,
@@ -25,13 +28,17 @@ from app.modules.tenant_user.dtos.tenant_user_invite.create_tenant_user_invite_d
 
 
 class TenantUserInviteMapper:
-    def __init__(self, tenant_id: UUID) -> None:
+    def __init__(self, tenant_id: UUID | None = None) -> None:
         self.tenant_id = tenant_id
 
     def to_model(
         self,
         create_tenant_user_invite_dto: CreateTenantUserInviteDTO,
     ) -> TenantUserInvite:
+        if self.tenant_id is None:
+            msg = "Tenant id is required to create invite"
+            raise ClientAwareError(msg, status.HTTP_400_BAD_REQUEST)
+
         return TenantUserInvite(
             tenant_id=self.tenant_id,
             role_id=create_tenant_user_invite_dto.role_id,

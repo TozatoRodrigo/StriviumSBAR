@@ -22,18 +22,17 @@ export function PwaInstallProvider({ children }: PropsWithChildren) {
   const isWeb = !Capacitor.isNativePlatform()
 
   const handleInstallClick = useCallback(
-    (key: SnackbarKey) => {
-      if (installPrompt) {
-        installPrompt.prompt()
-        installPrompt.userChoice.then((choiceResult: UserChoice) => {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt')
-          } else {
-            console.log('User dismissed the install prompt')
-          }
-          setInstallPrompt(null)
-          closeSnackbar(key)
-        })
+    async (key: SnackbarKey) => {
+      if (!installPrompt) return
+
+      try {
+        await installPrompt.prompt()
+        await installPrompt.userChoice
+      } catch {
+        // browser may cancel or block install prompt; keep UI flow consistent
+      } finally {
+        setInstallPrompt(null)
+        closeSnackbar(key)
       }
     },
     [installPrompt, closeSnackbar]

@@ -1,12 +1,18 @@
 from uuid import UUID
 
+from fastapi import status
+
 from app.enums.models.hospitalization_action_type_enums import HospitalizationActionType
 from app.enums.models.hospitalization_status_enums import HospitalizationStatus
+from app.exceptions.client_aware_error import ClientAwareError
 from app.modules.hospitalization.dtos.hospitalization_action.create_hospitalization_action import (
     CreateHospitalizationAction,
 )
 from app.modules.hospitalization.dtos.responses.hospitalization_action.hospitalization_action_response import (
     HospitalizationActionResponse,
+)
+from app.modules.hospitalization.exceptions.hospitalization.hospitalization_not_found_error import (
+    HospitalizationNotFoundError,
 )
 from app.modules.hospitalization.mappers.hospitalization_action_mapper import (
     HospitalizationActionMapper,
@@ -25,6 +31,14 @@ from app.modules.hospitalization.repositories.hospitalization_repository import 
 )
 from app.modules.hospitalization.services.hospitalization_actions_attachment.save_hospitalization_attachment import (
     SaveHospitalizationAttachment,
+)
+
+AI_REVIEW_REQUIRED_MESSAGE = "Rascunho SBAR gerado por IA exige revisão médica"
+AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE = (
+    "Transcrição bruta é obrigatória para SBAR gerado por IA"
+)
+HOSPITALIZATION_NOT_ACTIVE_MESSAGE = (
+    "Não é possível registrar evolução em uma internação encerrada"
 )
 
 
@@ -53,7 +67,14 @@ class CreateHospitalizationActionUseCase:
         self,
         hospitalization_action_data: CreateHospitalizationAction,
     ) -> HospitalizationActionResponse:
+        self.__validate_ai_review(hospitalization_action_data)
         entity = self.mapper.to_entity(hospitalization_action_data)
+
+        hospitalization = self.hospitalization_repository.get(entity.hospitalization_id)
+        if hospitalization is None:
+            raise HospitalizationNotFoundError(entity.hospitalization_id)
+        self.__validate_hospitalization_is_active(hospitalization.status)
+
         hospitalization_action = self.hospitalization_action_repository.create(entity)
         if hospitalization_action.type in {
             HospitalizationActionType.HOSPITALIZATION_DISCHARGE,
@@ -90,3 +111,29 @@ class CreateHospitalizationActionUseCase:
         }
         hospitalization.status = mapped_status[status]
         self.hospitalization_repository.save(hospitalization)
+
+    @staticmethod
+    def __validate_ai_review(data: CreateHospitalizationAction) -> None:
+        if not data.sbar_ai_generated:
+            return
+        if not data.sbar_ai_review_confirmed:
+            raise ClientAwareError(
+                AI_REVIEW_REQUIRED_MESSAGE,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+            )
+        if not data.sbar_source_transcript:
+            raise ClientAwareError(
+                AI_SOURCE_TRANSCRIPT_REQUIRED_MESSAGE,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+            )
+
+    @staticmethod
+    def __validate_hospitalization_is_active(
+        hospitalization_status: HospitalizationStatus,
+    ) -> None:
+        if hospitalization_status == HospitalizationStatus.ACTIVE:
+            return
+        raise ClientAwareError(
+            HOSPITALIZATION_NOT_ACTIVE_MESSAGE,
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+        )

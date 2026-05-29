@@ -396,7 +396,7 @@ def test_create_duplicated_hospitalization_should_return_422() -> None:
         json=data,
         headers=headers,
     )
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     data = response.json()
     assert data["message"] is not None
 
@@ -434,3 +434,67 @@ def test_create_new_hospitalization_with_old_finished_hospitalization_should_ret
         headers=headers,
     )
     assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_hospitalization_routes_should_return_401_without_token() -> None:
+    response = client.get("/hospitalization/v1/hospitalizations")
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_get_hospitalization_from_other_tenant_should_return_404() -> None:
+    tenant = create_tenant()
+    another_tenant = create_tenant()
+    user = create_user()
+    patient = create_patient({"tenant_id": another_tenant.id})
+    medical_team = create_medical_team({"tenant_id": another_tenant.id})
+    hospitalization = create_hospitalization(
+        {
+            "tenant_id": another_tenant.id,
+            "user_id": user.id,
+            "patient_id": patient.id,
+            "medical_team_id": medical_team.id,
+        }
+    )
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {
+        "Authorization": f"Bearer {tenant_access_token}",
+    }
+    response = client.get(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}",
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update_hospitalization_from_other_tenant_should_return_404() -> None:
+    tenant = create_tenant()
+    another_tenant = create_tenant()
+    user = create_user()
+    patient = create_patient({"tenant_id": another_tenant.id})
+    medical_team = create_medical_team({"tenant_id": another_tenant.id})
+    hospitalization = create_hospitalization(
+        {
+            "tenant_id": another_tenant.id,
+            "user_id": user.id,
+            "patient_id": patient.id,
+            "medical_team_id": medical_team.id,
+        }
+    )
+    tenant_access_token = create_tenant_access_token({"tenant_id": tenant.id})
+    headers = {
+        "Authorization": f"Bearer {tenant_access_token}",
+    }
+    data = {
+        "medical_team_id": str(medical_team.id),
+        "number": "UPDATED-123",
+        "place": "Updated Place",
+        "sector": "Updated Sector",
+        "reason": "Updated Reason",
+        "observation": "Updated Observation",
+    }
+    response = client.put(
+        f"/hospitalization/v1/hospitalizations/{hospitalization.id}",
+        json=data,
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_404_NOT_FOUND

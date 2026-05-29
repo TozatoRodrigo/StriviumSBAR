@@ -1,8 +1,11 @@
 from fastapi import APIRouter
 
 from .core.environment import envs
+from .modules.health.routes import router as health_router
 
 router = APIRouter()
+
+router.include_router(health_router)
 
 if not envs.APP_MODULE or envs.APP_MODULE == "user":
     from .modules.user.routes import router as user_router
@@ -40,7 +43,17 @@ if not envs.APP_MODULE or envs.APP_MODULE == "hospitalization_action":
 
     router.include_router(hospitalization_action_router)
 
+if not envs.APP_MODULE or envs.APP_MODULE == "sbar":
+    from .modules.sbar.routes import router as sbar_router
+
+    router.include_router(sbar_router)
+
 if not envs.APP_MODULE or envs.APP_MODULE == "tenant_user":
     from .modules.tenant_user.routers import router as tenant_user_router
 
     router.include_router(tenant_user_router)
+
+if not envs.APP_MODULE or envs.APP_MODULE == "doctor":
+    from .modules.doctor.routes import router as doctor_router
+
+    router.include_router(doctor_router)

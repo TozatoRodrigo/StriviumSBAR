@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlmodel import Session, select
 
 from app.enums.models.hospitalization_status_enums import HospitalizationStatus
@@ -12,12 +14,14 @@ from app.modules.hospitalization.validations.create_hospitalization.base_validat
 
 
 class DuplicatedHospitalizationValidation(BaseValidation):
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, tenant_id: UUID) -> None:
         self.session = session
+        self.tenant_id = tenant_id
 
     def validate(self, data: CreateHospitalizationDTO) -> None:
         hospitalization = self.session.exec(
             select(Hospitalization).where(
+                Hospitalization.tenant_id == self.tenant_id,
                 Hospitalization.patient_id == data.patient_id,
                 Hospitalization.medical_team_id == data.medical_team_id,
                 Hospitalization.status == HospitalizationStatus.ACTIVE,

@@ -1,6 +1,6 @@
 'use client'
 
-import { SigninMutationProps, useSigninMutation } from '@/hooks/mutations/auth'
+import { SigninMutationProps, useSigninMutation, useLogoutMutation } from '@/hooks/mutations/auth'
 import { createContext, useContext, ReactNode, useMemo, useCallback } from 'react'
 import { useAuthToken } from './AuthTokenContext'
 import { useRouter } from 'next/navigation'
@@ -20,14 +20,17 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const nav = useRouter()
-  const { tokens, addTokens: addTokens, clear: clearAuthTokens } = useAuthToken()
+  const { tokens, decoded, addTokens: addTokens, clear: clearAuthTokens } = useAuthToken()
   const { clear: clearWorkspaceTokens } = useWorkspaceToken()
   const { mutateAsync, isPending } = useSigninMutation()
+  const { mutateAsync: logoutMutation } = useLogoutMutation()
   const { enqueueSnackbar } = useSnackbar()
   const queryClient = useQueryClient()
 
-  // TODO: verificar se está expirado
-  const isAuth = useMemo<boolean>(() => !!tokens?.access, [tokens?.access])
+  const isAuth = useMemo<boolean>(() => {
+    if (!tokens?.access || !decoded.access?.exp) return false
+    return decoded.access.exp * 1000 > Date.now()
+  }, [decoded.access?.exp, tokens?.access])
   const { data: authInfo } = useUser({ enabled: isAuth })
 
   const login = useCallback(
@@ -40,11 +43,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [addTokens, enqueueSnackbar, mutateAsync, nav]
   )
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const refreshToken = tokens?.refresh
     clearWorkspaceTokens()
     clearAuthTokens()
     queryClient.clear()
-  }, [clearAuthTokens, clearWorkspaceTokens, queryClient])
+    if (refreshToken) {
+      try {
+        await logoutMutation({ refresh_token: refreshToken })
+      } catch {
+        // token already expired or invalid — safe to ignore
+      }
+    }
+  }, [clearAuthTokens, clearWorkspaceTokens, queryClient, logoutMutation, tokens?.refresh])
 
   const value = useMemo<AuthContextType>(
     () => ({

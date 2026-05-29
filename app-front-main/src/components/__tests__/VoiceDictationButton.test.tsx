@@ -114,6 +114,10 @@ describe('VoiceDictationButton', () => {
       MockSpeechRecognition.instances[0].emitError('not-allowed')
     })
 
-    expect(screen.getByRole('button', { name: 'Permissão do microfone negada.' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: /Permissão do microfone\/ditado negada\./,
+      })
+    ).toBeInTheDocument()
   })
 })

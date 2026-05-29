@@ -23,4 +23,8 @@ class FetchUserInfoUseCase:
             msg = "Não foi possível buscar as informações do usuário"
             raise UserNotFoundError(msg) from e
 
+        if user is None:
+            msg = "Não foi possível buscar as informações do usuário"
+            raise UserNotFoundError(msg)
+
         return self.user_mapper.to_response(user)

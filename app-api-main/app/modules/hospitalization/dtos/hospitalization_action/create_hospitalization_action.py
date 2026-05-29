@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import File, Form, UploadFile
 from pydantic import BaseModel, model_validator
+from pydantic_core import PydanticCustomError
 
 from app.enums.models.hospitalization_action_sbar_clinical_course_enums import (
     HospitalizationActionSbarClinicalCourse,
@@ -20,10 +21,17 @@ class CreateHospitalizationAction(BaseModel):
     sbar_background: str | None
     sbar_assessment: str | None
     sbar_recommendation: str | None
+    sbar_plan: str | None
     sbar_priority: HospitalizationActionSbarPriority | None
     sbar_clinical_course: HospitalizationActionSbarClinicalCourse | None
     sbar_pending_items: str | None
     sbar_alerts: str | None
+    sbar_source_transcript: str | None
+    sbar_ai_generated: bool
+    sbar_ai_review_confirmed: bool
+    sbar_ai_warnings: str | None
+    sbar_ai_missing_information: str | None
+    sbar_ai_confidence: str | None
 
     def __init__(
         self,
@@ -60,6 +68,10 @@ class CreateHospitalizationAction(BaseModel):
             str | None,
             Form(min_length=1, examples=["Manter conduta e revisar exames"]),
         ] = None,
+        sbar_plan: Annotated[
+            str | None,
+            Form(examples=["Reavaliar amanhã após resultado dos exames"]),
+        ] = None,
         sbar_priority: Annotated[
             HospitalizationActionSbarPriority | None,
             Form(examples=[HospitalizationActionSbarPriority.ATTENTION]),
@@ -76,6 +88,34 @@ class CreateHospitalizationAction(BaseModel):
             str | None,
             Form(examples=["Avisar se saturação abaixo de 92%"]),
         ] = None,
+        sbar_source_transcript: Annotated[
+            str | None,
+            Form(examples=["paciente sem febre nega dor manter antibiótico"]),
+        ] = None,
+        sbar_ai_generated: Annotated[
+            bool,
+            Form(examples=[True]),
+        ] = False,
+        sbar_ai_review_confirmed: Annotated[
+            bool,
+            Form(examples=[True]),
+        ] = False,
+        sbar_ai_warnings: Annotated[
+            str | None,
+            Form(examples=['["Revise a conduta antes de salvar."]']),
+        ] = None,
+        sbar_ai_missing_information: Annotated[
+            str | None,
+            Form(examples=['["Sinais vitais completos."]']),
+        ] = None,
+        sbar_ai_confidence: Annotated[
+            str | None,
+            Form(
+                examples=[
+                    '{"situation":0.9,"background":0,"assessment":0.8,"recommendation":0.7,"plan":0.7}'
+                ]
+            ),
+        ] = None,
     ) -> None:
         super().__init__(
             description=description,
@@ -85,10 +125,17 @@ class CreateHospitalizationAction(BaseModel):
             sbar_background=sbar_background,
             sbar_assessment=sbar_assessment,
             sbar_recommendation=sbar_recommendation,
+            sbar_plan=sbar_plan,
             sbar_priority=sbar_priority,
             sbar_clinical_course=sbar_clinical_course,
             sbar_pending_items=sbar_pending_items,
             sbar_alerts=sbar_alerts,
+            sbar_source_transcript=sbar_source_transcript,
+            sbar_ai_generated=sbar_ai_generated,
+            sbar_ai_review_confirmed=sbar_ai_review_confirmed,
+            sbar_ai_warnings=sbar_ai_warnings,
+            sbar_ai_missing_information=sbar_ai_missing_information,
+            sbar_ai_confidence=sbar_ai_confidence,
         )
 
     def has_sbar_payload(self) -> bool:
@@ -98,10 +145,12 @@ class CreateHospitalizationAction(BaseModel):
                 self.sbar_background,
                 self.sbar_assessment,
                 self.sbar_recommendation,
+                self.sbar_plan,
                 self.sbar_priority,
                 self.sbar_clinical_course,
                 self.sbar_pending_items,
                 self.sbar_alerts,
+                self.sbar_source_transcript,
             ]
         )
 
@@ -115,9 +164,11 @@ class CreateHospitalizationAction(BaseModel):
             "sbar_recommendation": self.sbar_recommendation,
             "sbar_priority": self.sbar_priority,
         }
-        missing_fields = [field for field, value in required_fields.items() if not value]
+        missing_fields = [
+            field for field, value in required_fields.items() if not value
+        ]
         if missing_fields:
-            raise ValueError(
-                f"Campos SBAR obrigatórios ausentes: {', '.join(missing_fields)}"
-            )
+            error_type = "sbar_required_fields"
+            message = f"Campos SBAR obrigatórios ausentes: {', '.join(missing_fields)}"
+            raise PydanticCustomError(error_type, message)
         return self

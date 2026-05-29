@@ -1,86 +1,74 @@
-# Guia de Configuração de Deploy
+# Guia de Release Mobile (App Store + Google Play)
 
-Este guia descreve os passos necessários para configurar o ambiente do GitHub para o deploy automatizado da aplicação.
+Este guia cobre a publicação mobile do Strivium Link com os workflows da raiz:
 
-## 1. Regra de Proteção de Branch (Obrigatório)
+- `.github/workflows/mobile-ci.yml`
+- `.github/workflows/mobile-release.yml`
 
-Para garantir que o workflow de deploy (`deploy.yml`) só seja executado em código que já passou nos testes de CI (`ci.yml`), configure uma regra de proteção para o branch `main`.
+## 1) Pré-requisitos
 
-1.  Vá para **Settings > Branches** no seu repositório GitHub.
-2.  Clique em **Add branch protection rule**.
-3.  Em **Branch name pattern**, digite `main`.
-4.  Marque a opção **Require status checks to pass before merging**.
-5.  Na caixa de busca que aparecer, procure e selecione o status check: `Lint, Test and Security Check`. Este é o nome do job no nosso arquivo `ci.yml`.
-6.  Clique em **Create**.
+- App Apple e app Google Play criados com `br.com.strivium.link`.
+- API de produção ativa em `https://strivium.link.servidortozato.cloud/api`.
+- Conta demo de revisão pronta (dados fictícios).
 
-Com essa regra, nenhum Pull Request poderá ser mesclado ao `main` sem que o CI passe, garantindo a integridade do código que será implantado.
+## 2) Configurar variáveis e secrets no GitHub
 
-## 2. Configuração de Ambientes no GitHub
+Referência completa:
 
-Para que o deploy manual funcione, você precisa configurar os ambientes no seu repositório.
+- [github-secrets-setup.md](../docs/mobile-release/github-secrets-setup.md)
 
-1.  Vá para **Settings > Environments** no seu repositório GitHub.
-2.  Clique em **New environment**.
-3.  Crie um ambiente chamado `production` (para GCP, Android e iOS) e outro chamado `production-magalu` (para a VM).
-4.  Em **Environment protection rules** para cada ambiente, marque **Required reviewers**.
-5.  Adicione as pessoas ou times que poderão aprovar os deploys.
-6.  Clique em **Configure environment**.
+Exemplo de arquivo local para bootstrap:
 
-## 3. Configuração de Secrets
+- [app-front-main/.env.github.release.example](./.env.github.release.example)
 
-As pipelines de deploy precisam de algumas chaves de acesso (secrets) para autenticar nos serviços das lojas de aplicativos e para assinar os builds.
+## 3) Bootstrap automático (opcional)
 
-Vá para **Settings > Secrets and variables > Actions** e adicione os seguintes secrets:
+Depois de preencher `.env.github.release.local`:
 
-### 3.1 iOS (Apple App Store)
+```bash
+cd app-front-main
+set -a
+source .env.github.release.local
+set +a
+yarn release:github:bootstrap
+```
 
-Para o deploy no iOS, o Fastlane utiliza algumas variáveis de ambiente para autenticação e assinatura.
+Dry-run:
 
--   `FASTLANE_USER`: Seu Apple ID (ex: `seuemail@exemplo.com`).
--   `FASTLANE_PASSWORD`: Uma senha específica de aplicativo gerada no site da Apple. [Como gerar](https://support.apple.com/pt-br/102654).
--   `MATCH_PASSWORD`: A senha que você usou para criptografar seu repositório de certificados do Fastlane Match.
--   `MATCH_GIT_PRIVATE_KEY`: A chave SSH privada para acessar o repositório de certificados do Fastlane Match.
+```bash
+cd app-front-main
+set -a
+source .env.github.release.local
+set +a
+yarn release:github:bootstrap --dry-run
+```
 
-**Nota sobre Fastlane Match:** É altamente recomendado usar o [Fastlane Match](https://docs.fastlane.tools/actions/match/) para gerenciar os certificados de assinatura e perfis de provisionamento do iOS. Você precisará configurar um repositório Git privado para armazenar esses arquivos.
+## 4) Disparar release
 
-### 3.2 Android (Google Play Store)
+Pelo GitHub Actions:
 
-Para o deploy no Android, você precisará de uma chave de serviço do Google Cloud para autenticar com a API do Google Play.
+- `Actions > Mobile Release > Run workflow`
+- `version_name`: ex. `1.0.0`
+- `release_target`: `ios`, `android` ou `all`
+- `google_play_track`: `internal`
 
--   `GOOGLE_PLAY_CREDENTIALS`: O conteúdo do arquivo JSON da sua chave de serviço do Google Cloud. [Como obter](https://docs.fastlane.tools/actions/supply/#setup).
+Ou por CLI:
 
-### 3.3 Web (Google Cloud Platform)
+```bash
+cd app-front-main
+yarn release:github:run --version-name 1.0.0 --release-target ios
+```
 
-Para o deploy da aplicação web estática no Google Cloud Storage.
+## 5) Validar resultado
 
--   `GCP_SA_KEY`: A chave da sua conta de serviço do Google Cloud em formato JSON. Essa conta de serviço precisa ter permissão de **Storage Object Admin** (`roles/storage.objectAdmin`) no bucket de destino. [Como criar e obter a chave](https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
--   `GCS_BUCKET`: O nome do bucket no Google Cloud Storage para onde os arquivos serão enviados. Ex: `gs://meu-site-estatico`.
+Use:
 
-### 3.4 Deploy Web na VM (Magalu Cloud)
+- [release-checklist.md](../docs/mobile-release/release-checklist.md)
+- [first-release-runbook.md](../docs/mobile-release/first-release-runbook.md)
 
-Para o deploy da aplicação web via SCP para a sua máquina virtual.
+Ordem esperada para App Store/TestFlight (`release_target=ios`):
 
--   `MAGALU_HOST`: O endereço de IP ou hostname da sua VM na Magalu Cloud.
--   `MAGALU_USERNAME`: O nome de usuário para a conexão SSH (ex: `ubuntu`, `ec2-user`).
--   `MAGALU_SSH_KEY`: A chave SSH privada, sem senha, para autenticar na sua VM.
-
-### 3.5 Assinatura do App Android
-
-Para assinar o build de release do Android, você precisará de um keystore.
-
-1.  Gere um keystore:
-    ```bash
-    keytool -genkey -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
-    ```
-2.  Converta o keystore para base64 para armazená-lo como um secret:
-    ```bash
-    base64 my-release-key.keystore > keystore.b64
-    ```
-3.  Adicione os seguintes secrets no GitHub:
-    -   `ANDROID_KEYSTORE_BASE64`: O conteúdo do arquivo `keystore.b64`.
-    -   `ANDROID_KEYSTORE_PASSWORD`: A senha que você definiu para o keystore.
-    -   `ANDROID_KEY_ALIAS`: O alias que você definiu (`my-key-alias` no exemplo).
-    -   `ANDROID_KEY_PASSWORD`: A senha que você definiu para a chave.
-
-Com estes secrets e o ambiente configurado, as pipelines de CI/CD estarão prontas para uso.
-
+1. `Validate CI secrets`
+2. `Build web export`
+3. `Build iOS IPA`
+4. `Deploy iOS to TestFlight`

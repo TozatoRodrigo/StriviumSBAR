@@ -3,6 +3,9 @@ from uuid import UUID
 from app.modules.hospitalization.dtos.responses.hospitalization.hospitalization_response import (
     HospitalizationResponse,
 )
+from app.modules.hospitalization.exceptions.hospitalization.hospitalization_not_found_error import (
+    HospitalizationNotFoundError,
+)
 from app.modules.hospitalization.mappers.hospitalization_mapper import (
     HospitalizationMapper,
 )
@@ -20,4 +23,6 @@ class GetHospitalizationUseCase:
 
     def handle(self, hospitalization_id: UUID) -> HospitalizationResponse:
         hospitalization = self.repository.get(hospitalization_id)
+        if hospitalization is None:
+            raise HospitalizationNotFoundError(hospitalization_id)
         return self.mapper.to_response(hospitalization)

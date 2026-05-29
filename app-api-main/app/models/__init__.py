@@ -6,6 +6,7 @@ from .medical_team import MedicalTeam
 from .medical_team_user import MedicalTeamUser
 from .patient import Patient
 from .permission import Permission
+from .refresh_token import RefreshToken
 from .role import Role
 from .role_permission import RolePermission
 from .tenant import Tenant
@@ -22,6 +23,7 @@ __all__ = [
     "MedicalTeamUser",
     "Patient",
     "Permission",
+    "RefreshToken",
     "Role",
     "RolePermission",
     "Tenant",

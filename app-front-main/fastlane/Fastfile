@@ -1,33 +1,126 @@
+require "base64"
+
 default_platform(:ios)
 
-platform :ios do
-  desc "Build the iOS application."
-  lane :build do |options|
-    # Run match to sync certificates and profiles
-    match(type: "appstore", readonly: true)
+APP_ROOT = File.expand_path("..", __dir__)
+ANDROID_ROOT = File.join(APP_ROOT, "android")
+IOS_ROOT = File.join(APP_ROOT, "ios", "App")
+BUILD_ROOT = File.join(APP_ROOT, "build")
 
-    version_name = options[:version_name]
-    build_number = options[:build_number]
+def required_option!(options, key)
+  value = options[key]
+  UI.user_error!("Missing required option: #{key}") if value.to_s.strip.empty?
+  value
+end
 
-    # Set the version and build number
-    increment_version_number(version_number: version_name, xcodeproj: "App.xcodeproj")
-    increment_build_number(build_number: build_number, xcodeproj: "App.xcodeproj")
+def required_env!(*keys)
+  missing = keys.select { |key| ENV[key].to_s.strip.empty? }
+  UI.user_error!("Missing required environment variables: #{missing.join(', ')}") unless missing.empty?
+end
 
-    # Sync capacitor
-    sh("../node_modules/.bin/npx capacitor sync ios")
-    
-    # build the app
-    build_app(
-      workspace: "App.xcworkspace",
-      scheme: "App",
-      export_method: "app-store"
+def app_store_api_key_from_env!
+  required_env!(
+    "APP_STORE_CONNECT_API_KEY_KEY_ID",
+    "APP_STORE_CONNECT_API_KEY_ISSUER_ID",
+    "APP_STORE_CONNECT_API_KEY_KEY"
+  )
+
+  key_content = ENV["APP_STORE_CONNECT_API_KEY_KEY"]
+  key_is_base64 = !key_content.include?("BEGIN PRIVATE KEY")
+
+  app_store_connect_api_key(
+    key_id: ENV["APP_STORE_CONNECT_API_KEY_KEY_ID"],
+    issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+    key_content: key_content,
+    is_key_content_base64: key_is_base64
+  )
+end
+
+def match_storage_options!
+  required_env!("MATCH_GIT_URL", "MATCH_PASSWORD")
+
+  options = {
+    git_url: ENV["MATCH_GIT_URL"]
+  }
+
+  match_git_branch = ENV["MATCH_GIT_BRANCH"].to_s.strip
+  options[:git_branch] = match_git_branch unless match_git_branch.empty?
+
+  match_private_key = ENV["MATCH_GIT_PRIVATE_KEY"].to_s.strip
+  match_private_key_base64 = ENV["MATCH_GIT_PRIVATE_KEY_BASE64"].to_s.strip
+  match_basic_auth = ENV["MATCH_GIT_BASIC_AUTHORIZATION"].to_s.strip
+
+  if !match_private_key.empty?
+    options[:git_private_key] = match_private_key
+  elsif !match_private_key_base64.empty?
+    decoded_key = Base64.decode64(match_private_key_base64)
+    unless decoded_key.include?("PRIVATE KEY")
+      UI.user_error!("MATCH_GIT_PRIVATE_KEY_BASE64 did not decode to a valid private key.")
+    end
+
+    options[:git_private_key] = decoded_key
+  elsif !match_basic_auth.empty?
+    options[:git_basic_authorization] = match_basic_auth
+  else
+    UI.user_error!(
+      "Missing match git authentication. Set MATCH_GIT_PRIVATE_KEY, MATCH_GIT_PRIVATE_KEY_BASE64, or MATCH_GIT_BASIC_AUTHORIZATION."
     )
   end
 
-  desc "Deploy the iOS application to TestFlight"
+  options
+end
+
+def run_store_env_check!
+  Dir.chdir(APP_ROOT) do
+    sh("node scripts/release/assert-production-env.mjs")
+  end
+end
+
+def sync_capacitor!(platform)
+  Dir.chdir(APP_ROOT) do
+    sh("npx cap sync #{platform}")
+  end
+end
+
+platform :ios do
+  desc "Build the iOS application for App Store/TestFlight."
+  lane :build do |options|
+    run_store_env_check!
+    api_key = app_store_api_key_from_env!
+    match_options = match_storage_options!
+
+    version_name = required_option!(options, :version_name)
+    build_number = required_option!(options, :build_number)
+
+    match(
+      type: "appstore",
+      readonly: true,
+      api_key: api_key,
+      **match_options
+    )
+
+    increment_version_number(version_number: version_name, xcodeproj: File.join(IOS_ROOT, "App.xcodeproj"))
+    increment_build_number(build_number: build_number, xcodeproj: File.join(IOS_ROOT, "App.xcodeproj"))
+
+    sync_capacitor!("ios")
+
+    build_app(
+      workspace: File.join(IOS_ROOT, "App.xcworkspace"),
+      scheme: "App",
+      export_method: "app-store",
+      output_directory: File.join(BUILD_ROOT, "ios"),
+      output_name: "StriviumLink.ipa",
+      clean: true
+    )
+  end
+
+  desc "Deploy the iOS application to TestFlight."
   lane :deploy do
-    # You can use pilot to upload to TestFlight
+    api_key = app_store_api_key_from_env!
+
     pilot(
+      api_key: api_key,
+      ipa: File.join(BUILD_ROOT, "ios", "StriviumLink.ipa"),
       skip_waiting_for_build_processing: true,
       skip_submission: true
     )
@@ -35,31 +128,39 @@ platform :ios do
 end
 
 platform :android do
-  desc "Build the Android application."
+  desc "Build the Android application bundle for Google Play."
   lane :build do |options|
-    version_name = options[:version_name]
-    version_code = options[:version_code]
+    run_store_env_check!
+    required_env!(
+      "ANDROID_KEYSTORE_BASE64",
+      "ANDROID_KEYSTORE_PASSWORD",
+      "ANDROID_KEY_ALIAS",
+      "ANDROID_KEY_PASSWORD"
+    )
 
-    # Set the version and build number
-    increment_version_name(version_name: version_name, gradle_file_path: "../android/app/build.gradle")
-    increment_version_code(version_code: version_code, gradle_file_path: "../android/app/build.gradle")
+    version_name = required_option!(options, :version_name)
+    version_code = required_option!(options, :version_code)
 
-    # Sync capacitor
-    sh("../node_modules/.bin/npx capacitor sync android")
-    
-    # build the app
+    increment_version_name(version_name: version_name, gradle_file_path: File.join(ANDROID_ROOT, "app", "build.gradle"))
+    increment_version_code(version_code: version_code, gradle_file_path: File.join(ANDROID_ROOT, "app", "build.gradle"))
+
+    sync_capacitor!("android")
+
     gradle(
-      task: "assemble",
-      build_type: "Release"
+      task: "bundle",
+      build_type: "Release",
+      project_dir: ANDROID_ROOT
     )
   end
 
-  desc "Deploy the Android application to the Play Store"
+  desc "Deploy the Android application to Google Play internal testing."
   lane :deploy do
-    # You can use supply to upload to the Play Store
+    required_env!("GOOGLE_PLAY_CREDENTIALS")
+
     supply(
-      track: 'internal'
+      aab: File.join(ANDROID_ROOT, "app", "build", "outputs", "bundle", "release", "app-release.aab"),
+      track: ENV.fetch("GOOGLE_PLAY_TRACK", "internal"),
+      json_key_data: ENV["GOOGLE_PLAY_CREDENTIALS"]
     )
   end
 end
-

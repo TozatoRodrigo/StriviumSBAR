@@ -58,10 +58,12 @@ class SaveHospitalizationAttachment:
 
     @staticmethod
     def __get_file_type(file: UploadFile) -> HospitalizationActionAttachmentType:
-        if file.content_type.startswith("image/"):
+        content_type = (file.content_type or "").lower()
+
+        if content_type.startswith("image/"):
             return HospitalizationActionAttachmentType.PHOTO
-        if file.content_type.startswith("video/"):
+        if content_type.startswith("video/"):
             return HospitalizationActionAttachmentType.VIDEO
-        if file.content_type.startswith("audio/"):
+        if content_type.startswith("audio/"):
             return HospitalizationActionAttachmentType.AUDIO
         return HospitalizationActionAttachmentType.DOCUMENT

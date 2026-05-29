@@ -22,8 +22,10 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   const { mutateAsync, isPending } = useSigninWorkspaceMutation()
   const { enqueueSnackbar } = useSnackbar()
 
-  // TODO: verificar se está expirado
-  const isAuth = useMemo<boolean>(() => !!tokens?.access, [tokens?.access])
+  const isAuth = useMemo<boolean>(() => {
+    if (!tokens?.access || !decoded.access?.exp) return false
+    return decoded.access.exp * 1000 > Date.now()
+  }, [decoded.access?.exp, tokens?.access])
 
   const select = useCallback(
     (tenant_id: string) => {

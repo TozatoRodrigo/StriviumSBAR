@@ -31,7 +31,7 @@ export default function Edit() {
       birth_date: payload.birth_date.toISOString().substring(0, 10),
     }
 
-    mutateAsync({ id: Number(doctor_id), payload: formatted })
+    mutateAsync({ id: String(doctor_id), payload: formatted })
       .then(() => {
         enqueueSnackbar('Médico atualizado com sucesso!', { variant: 'success' })
 
