@@ -5,7 +5,7 @@ import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { usePathname, useRouter } from 'next/navigation'
 import { PropsWithChildren, useEffect } from 'react'
 
-const onlyAuthRoutes = ['/workspaces', '/workspaces/create']
+const onlyAuthRoutes = ['/workspaces', '/workspaces/create', '/onboarding']
 
 export default function Private({ children }: PropsWithChildren) {
   const {

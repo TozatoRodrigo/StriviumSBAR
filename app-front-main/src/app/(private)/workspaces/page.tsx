@@ -4,7 +4,7 @@ import { Badge, Box, Stack, Tab, Tabs } from '@mui/material'
 import { WorkspacesSelectionList } from './components/WorkspacesSelectionList'
 import { OnlyAuthLayout } from '@/components/layouts/OnlyAuthLayout'
 import { PropsWithChildren, SyntheticEvent, useState } from 'react'
-import { useWorkspacesPendingInvitesCount } from '@/hooks/queries/workspacesUser'
+import { useWorkspacesPendingInvites, useWorkspacesPendingInvitesCount } from '@/hooks/queries/workspacesUser'
 import { WorkspacesInvitesList } from './components/WorkspacesInvitesList'
 
 type TabPanelProps = {
@@ -34,7 +34,12 @@ export default function Workspaces() {
     setTab(newValue)
   }
 
-  const { data: invites } = useWorkspacesPendingInvitesCount()
+  const { data: invitesCountData } = useWorkspacesPendingInvitesCount()
+  const { data: pendingInvitesData, isSuccess: isPendingInvitesLoaded, isError: isPendingInvitesError } =
+    useWorkspacesPendingInvites()
+
+  const pendingInvitesCount = pendingInvitesData?.data.length ?? 0
+  const invitesCount = invitesCountData?.count ?? pendingInvitesCount
 
   return (
     <OnlyAuthLayout>
@@ -46,8 +51,8 @@ export default function Workspaces() {
               label={
                 <Box display="flex" gap={2} alignItems="center">
                   Convites
-                  {!!invites.count && (
-                    <Badge badgeContent={invites.count} color="error" sx={{ transform: 'translateY(-2px)' }} />
+                  {!!invitesCount && (
+                    <Badge badgeContent={invitesCount} color="error" sx={{ transform: 'translateY(-2px)' }} />
                   )}
                 </Box>
               }
@@ -56,7 +61,10 @@ export default function Workspaces() {
           </Tabs>
         </Box>
         <CustomTabPanel value={tab} index={0}>
-          <WorkspacesSelectionList />
+          <WorkspacesSelectionList
+            canEvaluateOnboardingRedirect={isPendingInvitesLoaded && !isPendingInvitesError}
+            hasPendingInvites={pendingInvitesCount > 0}
+          />
         </CustomTabPanel>
         <CustomTabPanel value={tab} index={1}>
           <WorkspacesInvitesList />

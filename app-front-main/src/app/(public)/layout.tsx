@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { Container } from '@mui/material'
+import Container from '@mui/material/Container'
 import { useRouter } from 'next/navigation'
 import { PropsWithChildren, useEffect } from 'react'
 

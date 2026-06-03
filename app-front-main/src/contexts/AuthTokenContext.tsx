@@ -4,7 +4,7 @@ import { AUTH_LOCAL_STORAGE_KEY, AUTH_REFRESH_LOCAL_STORAGE_KEY } from '@/consta
 import { useUserRefreshToken } from '@/hooks/mutations/auth'
 import { usePersistTokens } from '@/hooks/usePersistTokens'
 import { decodeJwt } from '@/lib/utils'
-import { differenceInMinutes } from 'date-fns'
+import { differenceInMinutes } from 'date-fns/differenceInMinutes'
 
 import { createContext, useContext, ReactNode, useMemo, useEffect, useCallback, useRef } from 'react'
 

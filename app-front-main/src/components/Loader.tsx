@@ -1,4 +1,4 @@
-import { Box } from '@mui/material'
+import Box from '@mui/material/Box'
 import { keyframes } from '@emotion/react'
 
 const heartbeat = keyframes`

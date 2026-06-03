@@ -4,7 +4,7 @@ import { createContext, useContext, ReactNode, useMemo, useCallback, useRef, use
 import { WORKSPACE_LOCAL_STORAGE_KEY, WORKSPACE_REFRESH_LOCAL_STORAGE_KEY } from '@/constants/workspace'
 import { usePersistTokens } from '@/hooks/usePersistTokens'
 import { decodeJwt } from '@/lib/utils'
-import { differenceInMinutes } from 'date-fns'
+import { differenceInMinutes } from 'date-fns/differenceInMinutes'
 import { useWorkspaceRefreshToken } from '@/hooks/mutations/workspaces'
 
 type WorkspaceTokenContextType = ReturnType<typeof usePersistTokens> & {
