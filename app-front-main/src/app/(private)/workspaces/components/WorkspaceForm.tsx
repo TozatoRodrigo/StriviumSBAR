@@ -1,4 +1,5 @@
-import { Stack, TextField } from '@mui/material'
+import Stack from '@mui/material/Stack'
+import TextField from '@mui/material/TextField'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { WorkspaceFormData, WorkspaceSchema } from '@/validations/workspace'

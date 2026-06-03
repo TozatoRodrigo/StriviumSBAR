@@ -1,4 +1,5 @@
-import { isAfter, isValid } from 'date-fns'
+import { isAfter } from 'date-fns/isAfter'
+import { isValid } from 'date-fns/isValid'
 import { z } from 'zod/v4'
 
 const today = new Date()

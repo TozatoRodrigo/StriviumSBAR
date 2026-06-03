@@ -9,12 +9,20 @@ import { WorkspaceTokenProvider } from '@/contexts/WorkspaceTokenContext'
 import { PwaInstallProvider } from '@/components/PwaInstallProvider'
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { SnackbarProvider } from 'notistack'
 import { Suspense, useEffect, useState } from 'react'
-import { ThemeProvider } from '@mui/material'
+import { ThemeProvider } from '@mui/material/styles'
+import dynamic from 'next/dynamic'
 
 import { theme } from '@/theme'
+
+const ReactQueryDevtools =
+  process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_ENABLE_REACT_QUERY_DEVTOOLS === 'true'
+    ? dynamic(
+        () => import('@tanstack/react-query-devtools').then(mod => mod.ReactQueryDevtools),
+        { ssr: false }
+      )
+    : null
 
 type AppProvidersProps = Readonly<{
   children: React.ReactNode
@@ -44,7 +52,7 @@ export function AppProviders({ children }: AppProvidersProps) {
                   </WorkspaceTokenProvider>
                 </AuthTokenProvider>
               </AppRouterCacheProvider>
-              <ReactQueryDevtools initialIsOpen={false} />
+              {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
             </QueryClientProvider>
           </Suspense>
         </PwaInstallProvider>

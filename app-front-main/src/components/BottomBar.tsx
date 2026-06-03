@@ -1,4 +1,7 @@
-import { Button, ButtonProps, Divider, Stack } from '@mui/material'
+import Button from '@mui/material/Button'
+import type { ButtonProps } from '@mui/material/Button'
+import Divider from '@mui/material/Divider'
+import Stack from '@mui/material/Stack'
 import { PropsWithChildren } from 'react'
 
 const ActionOutlined = (props: ButtonProps) => {

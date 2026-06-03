@@ -1,5 +1,5 @@
-import { format as formatFn } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { format as formatFn } from 'date-fns/format'
+import { ptBR } from 'date-fns/locale/pt-BR'
 
 export const format = (date: Date | number | string, formatStr: string): string => {
   let d: Date

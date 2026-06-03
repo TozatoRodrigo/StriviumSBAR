@@ -21,4 +21,6 @@ export default function App() {
     if (!isAuthOnWorkspace) return router.push('/workspaces')
     router.push(mainPage)
   }, [isAuth, isAuthOnWorkspace, router])
+
+  return null
 }

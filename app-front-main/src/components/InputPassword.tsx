@@ -1,4 +1,5 @@
-import { FilledInput, FilledInputProps } from '@mui/material'
+import FilledInput from '@mui/material/FilledInput'
+import type { FilledInputProps } from '@mui/material/FilledInput'
 import InputAdornment from '@mui/material/InputAdornment'
 import IconButton from '@mui/material/IconButton'
 import Visibility from '@mui/icons-material/Visibility'
