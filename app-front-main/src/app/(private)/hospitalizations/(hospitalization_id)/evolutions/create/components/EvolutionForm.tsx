@@ -356,6 +356,7 @@ export const EvolutionForm = ({
           endAdornment: (
             <InputAdornment position="end" sx={{ alignSelf: 'flex-start', mt: 1 }}>
               <VoiceDictationButton
+                continuous
                 disabled={isPending}
                 fieldLabel={fieldLabel}
                 onTranscript={transcript => appendTranscriptToField(fieldName, transcript)}

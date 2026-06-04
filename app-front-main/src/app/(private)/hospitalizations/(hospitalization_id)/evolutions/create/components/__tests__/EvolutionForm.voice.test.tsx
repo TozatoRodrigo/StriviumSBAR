@@ -99,6 +99,7 @@ describe('EvolutionForm voice dictation', () => {
     render(<EvolutionForm isPending={false} submitAction={vi.fn()} initialData={requiredInitialData} />)
 
     await user.click(screen.getByRole('button', { name: 'Ditar por voz em Situação atual' }))
+    expect(MockSpeechRecognition.instances[0].continuous).toBe(true)
     await act(async () => {
       MockSpeechRecognition.instances[0].emitResult('sem febre nas últimas horas')
     })
@@ -111,6 +112,57 @@ describe('EvolutionForm voice dictation', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Avaliação clínica')).toHaveValue('Paciente clinicamente estável')
     )
+  })
+
+  it('uses continuous dictation for the main SBAR fields', async () => {
+    vi.stubEnv('NEXT_PUBLIC_EXPERIMENTAL_SBAR_VOICE_DICTATION', 'true')
+    const user = userEvent.setup()
+
+    render(<EvolutionForm isPending={false} submitAction={vi.fn()} initialData={requiredInitialData} />)
+
+    const fieldCases = [
+      {
+        buttonName: 'Ditar por voz em Situação atual',
+        fieldLabel: 'Situação atual',
+        initialValue: 'Paciente em avaliação',
+        transcript: 'sem febre',
+      },
+      {
+        buttonName: 'Ditar por voz em Contexto clínico relevante',
+        fieldLabel: 'Contexto clínico relevante',
+        initialValue: '',
+        transcript: 'internado por pneumonia',
+      },
+      {
+        buttonName: 'Ditar por voz em Avaliação clínica',
+        fieldLabel: 'Avaliação clínica',
+        initialValue: 'Paciente clinicamente estável',
+        transcript: 'melhora parcial',
+      },
+      {
+        buttonName: 'Ditar por voz em Recomendação',
+        fieldLabel: 'Recomendação',
+        initialValue: 'Manter observação clínica',
+        transcript: 'reavaliar amanhã',
+      },
+    ]
+
+    for (const fieldCase of fieldCases) {
+      const instanceIndex = MockSpeechRecognition.instances.length
+
+      await user.click(screen.getByRole('button', { name: fieldCase.buttonName }))
+
+      expect(MockSpeechRecognition.instances[instanceIndex].continuous).toBe(true)
+
+      await act(async () => {
+        MockSpeechRecognition.instances[instanceIndex].emitResult(fieldCase.transcript)
+      })
+
+      const expectedValue = [fieldCase.initialValue, fieldCase.transcript].filter(Boolean).join(' ')
+      await waitFor(() =>
+        expect(screen.getByLabelText(fieldCase.fieldLabel)).toHaveValue(expectedValue)
+      )
+    }
   })
 
   it('does not add audio files to the submit payload', async () => {
