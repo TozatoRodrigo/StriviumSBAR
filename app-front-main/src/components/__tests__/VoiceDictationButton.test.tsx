@@ -86,6 +86,7 @@ describe('VoiceDictationButton', () => {
     await user.click(screen.getByRole('button', { name: 'Ditar por voz em Situação atual' }))
 
     expect(MockSpeechRecognition.instances[0].lang).toBe('pt-BR')
+    expect(MockSpeechRecognition.instances[0].continuous).toBe(false)
     expect(MockSpeechRecognition.instances[0].start).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: 'Parar ditado em Situação atual' })).toBeInTheDocument()
 
@@ -94,6 +95,23 @@ describe('VoiceDictationButton', () => {
     })
 
     expect(onTranscript).toHaveBeenCalledWith('paciente estável')
+  })
+
+  it('can start speech recognition in continuous mode', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <VoiceDictationButton
+        continuous
+        fieldLabel="Situação atual"
+        onTranscript={vi.fn()}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Ditar por voz em Situação atual' }))
+
+    expect(MockSpeechRecognition.instances[0].continuous).toBe(true)
+    expect(MockSpeechRecognition.instances[0].start).toHaveBeenCalledTimes(1)
   })
 
   it('is disabled when the browser does not support speech recognition', () => {

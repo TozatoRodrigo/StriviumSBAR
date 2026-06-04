@@ -11,17 +11,20 @@ import {
 } from '@/hooks/useSpeechRecognition'
 
 type VoiceDictationButtonProps = {
+  continuous?: boolean
   disabled?: boolean
   fieldLabel: string
   onTranscript: (transcript: string) => void
 }
 
 export const VoiceDictationButton = ({
+  continuous = false,
   disabled = false,
   fieldLabel,
   onTranscript,
 }: VoiceDictationButtonProps) => {
   const { errorMessage, isSupported, start, status, stop } = useSpeechRecognition({
+    continuous,
     onTranscript,
   })
   const isListening = status === 'listening'
