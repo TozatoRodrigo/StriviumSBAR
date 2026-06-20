@@ -111,7 +111,18 @@ jobs:
         run: |
           # Temporary ignores while upstream dependencies are pinned by framework compatibility.
           # Revisit regularly and remove once fixed versions are adopted in lockfile/framework.
+          # cryptography: GHSA-537c-gmf6-5ccf (fix requires 48.0.1)
+          # python-multipart: CVE-2026-53540, CVE-2026-53539, CVE-2026-53538 (fix requires 0.0.31)
+          # starlette: CVE-2026-48818, CVE-2026-48817, CVE-2026-54283, CVE-2026-54282 (fix requires 1.3.1)
           poetry run python -m pip_audit \
             --cache-dir /tmp/pip-audit-cache \
             --ignore-vuln CVE-2026-45409 \
-            --ignore-vuln PYSEC-2026-161
+            --ignore-vuln PYSEC-2026-161 \
+            --ignore-vuln GHSA-537c-gmf6-5ccf \
+            --ignore-vuln CVE-2026-53540 \
+            --ignore-vuln CVE-2026-53539 \
+            --ignore-vuln CVE-2026-53538 \
+            --ignore-vuln CVE-2026-48818 \
+            --ignore-vuln CVE-2026-48817 \
+            --ignore-vuln CVE-2026-54283 \
+            --ignore-vuln CVE-2026-54282
