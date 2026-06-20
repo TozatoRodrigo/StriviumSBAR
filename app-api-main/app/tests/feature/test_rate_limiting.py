@@ -1,5 +1,4 @@
-"""
-Tests for API rate limiting functionality.
+"""Tests for API rate limiting functionality.
 
 This module tests the rate limiting middleware to ensure
 that excessive requests are properly throttled.
@@ -26,11 +25,11 @@ def test_rate_limiting_middleware_is_active() -> None:
     response = client.get("/docs")
 
     # Check that the response doesn't indicate middleware errors
-    assert response.status_code in [
+    assert response.status_code in {
         status.HTTP_200_OK,
         status.HTTP_404_NOT_FOUND,
         status.HTTP_401_UNAUTHORIZED,
-    ], "Middleware should not cause server errors"
+    }, "Middleware should not cause server errors"
 
 
 def test_rate_limiting_on_login_endpoint(mock_turnstile_validation) -> None:  # noqa: ANN001
@@ -50,7 +49,7 @@ def test_rate_limiting_on_login_endpoint(mock_turnstile_validation) -> None:  # 
     # Note: This might not always trigger in test environment due to
     # TestClient behavior, but the structure validates the implementation
     has_429_or_401 = any(
-        status_code in [status.HTTP_429_TOO_MANY_REQUESTS, status.HTTP_401_UNAUTHORIZED]
+        status_code in {status.HTTP_429_TOO_MANY_REQUESTS, status.HTTP_401_UNAUTHORIZED}
         for status_code in responses
     )
 

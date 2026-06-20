@@ -1,5 +1,4 @@
-"""
-Rate limiter configuration for the Strivium API.
+"""Rate limiter configuration for the Strivium API.
 
 This module provides a centralized rate limiter instance that can be used
 across the application to apply rate limits to specific endpoints.
