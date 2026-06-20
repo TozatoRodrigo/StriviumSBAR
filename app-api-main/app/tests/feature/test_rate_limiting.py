@@ -15,7 +15,9 @@ client = TestClient(app)
 
 def test_rate_limiting_should_exist_on_app() -> None:
     """Test that rate limiter is configured on the app."""
-    assert hasattr(app.state, "limiter"), "Rate limiter should be configured on app.state"
+    assert hasattr(app.state, "limiter"), (
+        "Rate limiter should be configured on app.state"
+    )
 
 
 def test_rate_limiting_middleware_is_active() -> None:
