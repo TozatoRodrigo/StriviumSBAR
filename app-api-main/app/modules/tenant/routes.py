@@ -1,17 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.enums.models.permissions_enums import (
-    HospitalizationPermissionsEnum,
-    MedicalTeamPermissionsEnum,
-    PatientPermissionsEnum,
-    TenantUserPermissionsEnum,
-)
-from app.middlewares.auth_middleware import (
-    require_any_permission,
-    require_permission,
-    verify_tenant_jwt,
-    verify_user_jwt,
-)
+from app.middlewares.auth_middleware import verify_tenant_jwt, verify_user_jwt
 from app.modules.tenant.dtos.responses.list_tenants_response_dto import (
     ListTenantsResponseDTO,
 )
@@ -21,7 +10,6 @@ from .controllers.tenant_controller import (
     create_tenant,
     get_tenant,
     list_tenants_available,
-    update_tenant,
 )
 
 router = APIRouter(prefix="/tenant/v1", tags=["tenant"])
@@ -48,28 +36,5 @@ router.add_api_route(
     endpoint=get_tenant,
     methods=["GET"],
     response_model=TenantResponseDTO,
-    dependencies=[
-        Depends(verify_tenant_jwt),
-        Depends(
-            require_any_permission(
-                [
-                    TenantUserPermissionsEnum.READ.value,
-                    PatientPermissionsEnum.READ.value,
-                    HospitalizationPermissionsEnum.READ.value,
-                    MedicalTeamPermissionsEnum.READ.value,
-                ]
-            )
-        ),
-    ],
-)
-
-router.add_api_route(
-    path="/tenants/{tenant_id}",
-    endpoint=update_tenant,
-    methods=["PATCH"],
-    response_model=TenantResponseDTO,
-    dependencies=[
-        Depends(verify_tenant_jwt),
-        Depends(require_permission(TenantUserPermissionsEnum.UPDATE.value)),
-    ],
+    dependencies=[Depends(verify_tenant_jwt)],
 )

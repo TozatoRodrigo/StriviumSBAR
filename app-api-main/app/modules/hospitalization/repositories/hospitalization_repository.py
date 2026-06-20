@@ -11,7 +11,6 @@ from sqlmodel.sql.expression import SelectOfScalar
 from app.enums.models.hospitalization_status_enums import HospitalizationStatus
 from app.models.hospitalization import Hospitalization
 from app.models.hospitalization_action import HospitalizationAction
-from app.models.medical_team import MedicalTeam
 from app.models.patient import Patient
 from app.utils.timezone import get_timezone
 
@@ -54,20 +53,10 @@ class HospitalizationRepository:
     def get(self, hospitalization_id: UUID) -> Hospitalization:
         query = (
             select(Hospitalization)
-            .where(
-                Hospitalization.id == hospitalization_id,
-                Hospitalization.tenant_id == self.tenant_id,
-            )
+            .where(Hospitalization.id == hospitalization_id)
             .options(joinedload(Hospitalization.patient))
         )
         return self.session.exec(query).first()
-
-    def is_medical_team_in_tenant(self, medical_team_id: UUID) -> bool:
-        query = select(MedicalTeam.id).where(
-            MedicalTeam.id == medical_team_id,
-            MedicalTeam.tenant_id == self.tenant_id,
-        )
-        return self.session.exec(query).first() is not None
 
     @staticmethod
     def _get_today_start() -> datetime:

@@ -5,7 +5,6 @@ from fastapi import Depends, Header
 from sqlalchemy.orm import Session
 
 from app.core.database import get_session
-from app.exceptions.authentication_error import AuthenticationError
 from app.models.user import User
 from app.modules.user.exceptions.user_not_found_error import UserNotFoundError
 from app.services.cloudflare.turnstile import TurnstileService
@@ -18,9 +17,9 @@ def get_turnstile_service() -> TurnstileService:
 
 
 def get_user_token_service(
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: Annotated[str, Header()],
 ) -> UserTokenService:
-    return UserTokenService(authorization or "")
+    return UserTokenService(authorization)
 
 
 def get_logged_user_service(
@@ -45,7 +44,8 @@ def get_user_id_from_token(
 ) -> UUID:
     user_id = user_token_service.get_user_id_from_token()
     if user_id is None:
-        raise AuthenticationError
+        msg = "Usuário não encontrado"
+        raise UserNotFoundError(msg)
     return UUID(user_id)
 
 
@@ -54,7 +54,8 @@ def get_user_id_from_tenant_token(
 ) -> UUID:
     user_id = user_token_service.get_user_id_from_tenant_token()
     if user_id is None:
-        raise AuthenticationError
+        msg = "Usuário não encontrado"
+        raise UserNotFoundError(msg)
     return UUID(user_id)
 
 

@@ -19,17 +19,10 @@ class HospitalizationActionSbarRepository:
             existing_sbar.background = sbar.background
             existing_sbar.assessment = sbar.assessment
             existing_sbar.recommendation = sbar.recommendation
-            existing_sbar.plan = sbar.plan
             existing_sbar.priority = sbar.priority
             existing_sbar.clinical_course = sbar.clinical_course
             existing_sbar.pending_items = sbar.pending_items
             existing_sbar.alerts = sbar.alerts
-            existing_sbar.source_transcript = sbar.source_transcript
-            existing_sbar.ai_generated = sbar.ai_generated
-            existing_sbar.ai_review_confirmed = sbar.ai_review_confirmed
-            existing_sbar.ai_warnings = sbar.ai_warnings
-            existing_sbar.ai_missing_information = sbar.ai_missing_information
-            existing_sbar.ai_confidence = sbar.ai_confidence
             sbar = existing_sbar
 
         self.session.add(sbar)

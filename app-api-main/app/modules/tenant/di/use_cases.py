@@ -23,9 +23,6 @@ from app.modules.tenant.use_cases.tenant.get_tenant_data_use_case import (
 from app.modules.tenant.use_cases.tenant.list_tenants_available_for_user_use_case import (
     ListTenantsAvailableForUserUseCase,
 )
-from app.modules.tenant.use_cases.tenant.update_tenant_use_case import (
-    UpdateTenantUseCase,
-)
 from app.modules.tenant.use_cases.tenant_user.create_admin_tenant_user_use_case import (
     CreateAdminTenantUserUseCase,
 )
@@ -85,10 +82,3 @@ def get_get_tenant_data_use_case(
     tenant_mapper: Annotated[TenantMapper, Depends(get_tenant_mapper)],
 ) -> GetTenantDataUseCase:
     return GetTenantDataUseCase(tenant_repository, tenant_mapper)
-
-
-def get_update_tenant_use_case(
-    tenant_repository: Annotated[TenantRepository, Depends(get_tenant_repository)],
-    tenant_mapper: Annotated[TenantMapper, Depends(get_tenant_mapper)],
-) -> UpdateTenantUseCase:
-    return UpdateTenantUseCase(tenant_repository, tenant_mapper)

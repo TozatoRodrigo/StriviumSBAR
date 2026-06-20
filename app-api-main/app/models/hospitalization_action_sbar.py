@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, Column, Text
+from sqlalchemy import Column, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.enums.models.hospitalization_action_sbar_clinical_course_enums import (
@@ -30,29 +30,12 @@ class HospitalizationActionSbar(SQLModel, table=True):
     background: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     assessment: str = Field(sa_column=Column(Text, nullable=False))
     recommendation: str = Field(sa_column=Column(Text, nullable=False))
-    plan: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     priority: HospitalizationActionSbarPriority = Field(nullable=False)
     clinical_course: HospitalizationActionSbarClinicalCourse | None = Field(
         default=None, nullable=True
     )
-    pending_items: str | None = Field(
-        default=None, sa_column=Column(Text, nullable=True)
-    )
+    pending_items: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
     alerts: str | None = Field(default=None, sa_column=Column(Text, nullable=True))
-    source_transcript: str | None = Field(
-        default=None, sa_column=Column(Text, nullable=True)
-    )
-    ai_generated: bool = Field(default=False, nullable=False)
-    ai_review_confirmed: bool = Field(default=False, nullable=False)
-    ai_warnings: list[str] | None = Field(
-        default=None, sa_column=Column(JSON, nullable=True)
-    )
-    ai_missing_information: list[str] | None = Field(
-        default=None, sa_column=Column(JSON, nullable=True)
-    )
-    ai_confidence: dict[str, float] | None = Field(
-        default=None, sa_column=Column(JSON, nullable=True)
-    )
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

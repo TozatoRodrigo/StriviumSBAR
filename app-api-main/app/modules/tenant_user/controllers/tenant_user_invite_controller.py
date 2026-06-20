@@ -34,20 +34,13 @@ from app.modules.tenant_user.use_cases.tenant_user_invite.send_invite_use_case i
     SendInviteUseCase,
 )
 
-INVITE_EMAIL_DISPATCH_HEADER = "X-Tenant-Invite-Email-Dispatch"
-
 
 def send_invite(
     data: CreateTenantUserInviteDTO,
     use_case: Annotated[SendInviteUseCase, Depends(get_send_invite_use_case)],
 ) -> JSONResponse:
-    dispatch_status = use_case.handle(data)
-    headers = {INVITE_EMAIL_DISPATCH_HEADER: dispatch_status}
-    return JSONResponse(
-        content=None,
-        status_code=status.HTTP_202_ACCEPTED,
-        headers=headers,
-    )
+    use_case.handle(data)
+    return JSONResponse(content=None, status_code=status.HTTP_202_ACCEPTED)
 
 
 def get_tenant_pending_invites(

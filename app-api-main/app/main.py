@@ -15,24 +15,6 @@ from .exceptions.handler import (
 from .middlewares.set_timezone import SetTimezoneMiddleware
 from .routes import router
 
-JWT_SECRET_MIN_LENGTH = 32
-
-
-def _ensure_security_configuration() -> None:
-    secret = envs.JWT_SECRET.strip()
-    if len(secret) < JWT_SECRET_MIN_LENGTH:
-        msg = f"JWT_SECRET must contain at least {JWT_SECRET_MIN_LENGTH} characters"
-        raise RuntimeError(msg)
-
-
-_ensure_security_configuration()
-
-cors_allowed_origins = [
-    origin.strip() for origin in envs.CORS_ALLOWED_ORIGINS.split(",") if origin.strip()
-]
-if not cors_allowed_origins:
-    cors_allowed_origins = [envs.APP_URL]
-
 app = FastAPI(
     title="Strivium API",
     description="API para o sistema Strivium",
@@ -44,7 +26,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_allowed_origins,
+    allow_origins="*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

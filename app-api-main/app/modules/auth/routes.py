@@ -4,7 +4,6 @@ from app.dtos.exception.exception_dto import ExceptionDTO
 from app.middlewares.turnstile_middleware import verify_turnstile_token
 from app.modules.auth.controllers.auth_controller import login, tenant_auth
 from app.modules.auth.controllers.refresh_auth_controller import (
-    logout,
     refresh_tenant_auth,
     refresh_user_auth,
 )
@@ -47,11 +46,4 @@ router.add_api_route(
     refresh_tenant_auth,
     methods=["POST"],
     response_model=TenantAuthResponseDTO,
-)
-
-router.add_api_route(
-    "/logout",
-    logout,
-    methods=["POST"],
-    status_code=204,
 )

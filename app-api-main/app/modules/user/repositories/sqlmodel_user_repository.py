@@ -21,9 +21,3 @@ class SqlModelUserRepository(UserRepository):
 
     def get_user_by_login(self, login: str) -> User | None:
         return self.session.exec(select(User).where(User.email == login)).first()
-
-    def find_by_email(self, email: str) -> User | None:
-        return self.session.exec(select(User).where(User.email == email)).first()
-
-    def find_by_document(self, document: str) -> User | None:
-        return self.session.exec(select(User).where(User.document == document)).first()

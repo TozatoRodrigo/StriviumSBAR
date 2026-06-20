@@ -23,9 +23,6 @@ class User(SQLModel, table=True):
     email: str = Field(nullable=False, unique=True)
     password: str = Field(nullable=False)
     birth_date: date = Field(nullable=False)
-    cellphone: str | None = Field(nullable=True)
-    gender: str | None = Field(nullable=True)
-    specialty: str | None = Field(nullable=True)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

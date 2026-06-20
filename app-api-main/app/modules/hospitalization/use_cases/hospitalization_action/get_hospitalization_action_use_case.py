@@ -21,13 +21,8 @@ class GetHospitalizationActionUseCase:
         self.repository = repository
         self.mapper = mapper
 
-    def handle(
-        self, hospitalization_id: UUID, hospitalization_action_id: UUID
-    ) -> HospitalizationAction:
+    def handle(self, hospitalization_action_id: UUID) -> HospitalizationAction:
         hospitalization_action = self.repository.find_by_id(hospitalization_action_id)
-        if (
-            hospitalization_action is None
-            or hospitalization_action.hospitalization_id != hospitalization_id
-        ):
+        if hospitalization_action is None:
             raise HospitalizationActionNotFoundError(hospitalization_action_id)
         return self.mapper.to_response(hospitalization_action)

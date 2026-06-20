@@ -1,32 +1,32 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Header
+from fastapi import Header, HTTPException, Request, status
 from jose import jwt
 
 from app.core.environment import envs
-from app.exceptions.authentication_error import AuthenticationError
+from app.exceptions.tenant_not_found import TenantNotFoundError
+
+
+def get_tenant_id_from_binding(request: Request) -> UUID:
+    tenant_id = request.path_params["tenant_id"]
+    if tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recurso não encontrado",
+        )
+    return UUID(tenant_id)
 
 
 def get_tenant_id_from_token(
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: Annotated[str, Header()],
 ) -> UUID:
     if not authorization:
-        raise AuthenticationError
+        raise TenantNotFoundError
 
-    if not authorization.startswith("Bearer "):
-        raise AuthenticationError
-
-    authorization = authorization.removeprefix("Bearer ").strip()
-    if not authorization:
-        raise AuthenticationError
-
+    authorization = authorization.replace("Bearer ", "")
     try:
         payload = jwt.decode(authorization, envs.JWT_SECRET, algorithms=["HS256"])
-        if payload.get("type") != "tenant":
-            raise AuthenticationError
         return UUID(payload["sub"])
-    except AuthenticationError:
-        raise
     except Exception as e:
-        raise AuthenticationError from e
+        raise TenantNotFoundError from e

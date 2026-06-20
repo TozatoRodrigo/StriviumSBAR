@@ -12,10 +12,8 @@ class Environment(BaseSettings):
     )
 
     APP_URL: str = "http://localhost:55000"
-    CORS_ALLOWED_ORIGINS: str = ""
 
     JWT_SECRET: str = ""
-    REFRESH_TOKEN_STRICT_MODE: bool = True
 
     DB_DRIVER: str = "postgresql"
     DB_HOST: str = "localhost"
@@ -30,12 +28,6 @@ class Environment(BaseSettings):
     APP_MODULE: str | None = None
 
     FILESYSTEM_DRIVER: str = "local"
-    UPLOAD_MAX_FILE_SIZE_MB: int = 20
-    UPLOAD_ALLOWED_EXTENSIONS: str = "png,jpg,jpeg,webp,pdf,mp3,wav,m4a,mp4,mov"
-    UPLOAD_ALLOWED_MIME_TYPES: str = (
-        "image/png,image/jpeg,image/webp,application/pdf,audio/mpeg,audio/wav,"
-        "audio/x-wav,audio/mp4,audio/x-m4a,video/mp4,video/quicktime"
-    )
 
     GCS_BASE_URL: str | None = None
     GCS_PROJECT_ID: str | None = None
@@ -54,15 +46,9 @@ class Environment(BaseSettings):
     MAIL_PASSWORD: str | None = None
     MAIL_FROM: str | None = None
     MAIL_USE_TLS: bool = True
-    TENANT_INVITE_EMAIL_ENABLED: bool = False
 
     TURNSTILE_ENABLED: bool = True
     CLOUDFLARE_TURNSTILE_SECRET: str = ""
-
-    SBAR_AI_ENABLED: bool = False
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3.2:3b"
-    OLLAMA_TIMEOUT_SECONDS: float = 30
 
 
 envs = Environment()

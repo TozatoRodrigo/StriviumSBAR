@@ -50,7 +50,6 @@ def create_hospitalization_action(
 
 
 def get_hospitalization_action(
-    hospitalization_id: Annotated[UUID, Path(title="Hospitalization ID")],
     hospitalization_action_id: Annotated[UUID, Path(title="Hospitalization Action ID")],
     get_hospitalization_action_use_case: Annotated[
         GetHospitalizationActionUseCase,
@@ -58,7 +57,7 @@ def get_hospitalization_action(
     ],
 ) -> JSONResponse:
     hospitalization_action = get_hospitalization_action_use_case.handle(
-        hospitalization_id, hospitalization_action_id
+        hospitalization_action_id
     )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -84,7 +83,6 @@ def paginate_hospitalization_actions(
 
 
 def update_hospitalization_action(
-    hospitalization_id: Annotated[UUID, Path(title="Hospitalization ID")],
     hospitalization_action_id: Annotated[UUID, Path(title="Hospitalization Action ID")],
     data: Annotated[UpdateHospitalizationAction, Depends()],
     update_hospitalization_action_use_case: Annotated[
@@ -93,7 +91,7 @@ def update_hospitalization_action(
     ],
 ) -> JSONResponse:
     result = update_hospitalization_action_use_case.handle(
-        hospitalization_id, hospitalization_action_id, data
+        hospitalization_action_id, data
     )
     return JSONResponse(
         status_code=status.HTTP_200_OK,

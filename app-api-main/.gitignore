@@ -7,3 +7,5 @@ venv
 test.sqlite
 htmlcov/
 .coverage
+app-front-main/.local-bin/
+.claude/worktrees/
