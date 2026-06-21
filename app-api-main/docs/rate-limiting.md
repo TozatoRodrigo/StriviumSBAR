@@ -13,11 +13,11 @@ Por padrão, todos os endpoints da API possuem os seguintes limites:
 
 ## Como Funciona
 
-O rate limiting identifica os clientes pelo endereço IP remoto e rastreia o número de requisições dentro de janelas de tempo específicas. Quando um cliente excede o limite:
+O rate limiting identifica os clientes pelo endereço IP remoto e rastreia o número de requisições dentro de janelas de tempo específicas. Os headers informativos `X-RateLimit-*` são emitidos em todas as respostas (configuração `headers_enabled=True`). Quando um cliente excede o limite:
 
 1. A API retorna o status HTTP `429 Too Many Requests`
 2. O header `Retry-After` informa quando o cliente pode tentar novamente
-3. Headers adicionais como `X-RateLimit-Limit` e `X-RateLimit-Remaining` fornecem informações sobre o limite
+3. Headers adicionais como `X-RateLimit-Limit`, `X-RateLimit-Remaining` e `X-RateLimit-Reset` fornecem informações sobre o limite
 
 ## Limites Específicos por Endpoint
 
@@ -92,38 +92,43 @@ A configuração do rate limiting está centralizada em:
 
 - **Arquivo:** `app/core/rate_limiter.py`
 - **Configuração no app:** `app/main.py`
+- **Variáveis de ambiente:** `app/core/environment.py`
+
+Toda a configuração é feita por variáveis de ambiente, sem necessidade de
+alterar código:
+
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `RATE_LIMIT_ENABLED` | `true` | Liga/desliga o rate limiting globalmente. |
+| `RATE_LIMIT_STORAGE_URI` | `memory://` | Backend de armazenamento. Use uma URL Redis em produção. |
+| `RATE_LIMIT_DEFAULT` | `100/minute;1000/hour` | Limites globais (lista separada por `;`). |
+| `RATE_LIMIT_AUTH_LOGIN` | `5/minute` | Limite do endpoint `POST /auth/v1/login`. |
+| `RATE_LIMIT_AUTH_TENANT` | `10/minute` | Limite do endpoint `POST /auth/v1/tenant`. |
 
 ### Modificar Limites Padrão
 
-Para alterar os limites padrão da API, edite o arquivo `app/core/rate_limiter.py`:
+Para alterar os limites, basta ajustar as variáveis de ambiente. Por exemplo,
+no `.env`:
 
-```python
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["200/minute", "2000/hour"],  # Novos limites
-    storage_uri="memory://",
-)
+```bash
+RATE_LIMIT_DEFAULT=200/minute;2000/hour
+RATE_LIMIT_AUTH_LOGIN=10/minute
 ```
 
 ### Usar Redis para Armazenamento Distribuído
 
-Para ambientes de produção com múltiplas instâncias, recomenda-se usar Redis:
+Em produção com múltiplas instâncias da API, o armazenamento em memória não é
+suficiente (cada instância teria a sua própria contagem). Aponte
+`RATE_LIMIT_STORAGE_URI` para o Redis:
 
-```python
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["100/minute", "1000/hour"],
-    storage_uri="redis://localhost:6379",  # URL do Redis
-)
+```bash
+RATE_LIMIT_STORAGE_URI=redis://strivium-redis:6379/0
 ```
 
-Para usar Redis, adicione a dependência:
-```toml
-dependencies = [
-    ...
-    "redis (>=5.2.2,<6.0.0)",
-]
-```
+O `docker-compose.yaml` já provê um serviço `redis` (`strivium-redis`) para
+desenvolvimento local. A dependência `redis` já está declarada em
+`pyproject.toml`, portanto nenhuma alteração de código é necessária — apenas
+configure a variável de ambiente.
 
 ## Resposta ao Atingir o Limite
 
@@ -168,6 +173,12 @@ from slowapi import Limiter
 ## Testes
 
 Para testar o rate limiting localmente:
+
+O comportamento de throttling é coberto por um teste isolado e determinístico
+(`app/tests/feature/test_rate_limiting.py`), que cria uma aplicação própria com
+o limiter habilitado — assim não interfere nas demais suítes. No ambiente de
+teste o rate limiting global fica desativado (`RATE_LIMIT_ENABLED=false` em
+`.env.testing`).
 
 ```bash
 # Execute os testes específicos de rate limiting

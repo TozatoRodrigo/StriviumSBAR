@@ -4,6 +4,7 @@ networks:
 
 volumes:
   db_data:
+  redis_data:
 
 services:
   api:
@@ -19,6 +20,9 @@ services:
       - strivium_api
     volumes:
       - "./:/app"
+    depends_on:
+      - db
+      - redis
 
   db:
     container_name: strivium-db
@@ -34,6 +38,18 @@ services:
       - "55001:5432"
     volumes:
       - "db_data:/var/lib/postgresql/data"
+    networks:
+      - strivium_api
+
+  redis:
+    container_name: strivium-redis
+    image: redis:7-alpine
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "55002:6379"
+    volumes:
+      - "redis_data:/data"
     networks:
       - strivium_api
 
