@@ -17,6 +17,15 @@ class Environment(BaseSettings):
     JWT_SECRET: str = ""
     REFRESH_TOKEN_STRICT_MODE: bool = True
 
+    # Rate limiting. Defaults are safe for single-instance/local usage.
+    # In production set RATE_LIMIT_STORAGE_URI to a Redis URL (e.g.
+    # "redis://strivium-redis:6379/0") so limits are shared across instances.
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_STORAGE_URI: str = "memory://"
+    RATE_LIMIT_DEFAULT: str = "100/minute;1000/hour"
+    RATE_LIMIT_AUTH_LOGIN: str = "5/minute"
+    RATE_LIMIT_AUTH_TENANT: str = "10/minute"
+
     DB_DRIVER: str = "postgresql"
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
