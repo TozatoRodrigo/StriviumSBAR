@@ -26,6 +26,16 @@ class Environment(BaseSettings):
     RATE_LIMIT_AUTH_LOGIN: str = "5/minute"
     RATE_LIMIT_AUTH_TENANT: str = "10/minute"
 
+    # Security response headers (OWASP A05 - Security Misconfiguration).
+    # HSTS is disabled by default because it only makes sense over HTTPS;
+    # enable it in production (behind TLS).
+    SECURITY_HEADERS_ENABLED: bool = True
+    SECURITY_HSTS_ENABLED: bool = False
+    SECURITY_HSTS_MAX_AGE: int = 63072000
+    SECURITY_CSP: str = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+    SECURITY_REFERRER_POLICY: str = "no-referrer"
+    SECURITY_FRAME_OPTIONS: str = "DENY"
+
     DB_DRIVER: str = "postgresql"
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432
