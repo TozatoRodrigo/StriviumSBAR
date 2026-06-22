@@ -16,6 +16,7 @@ from .exceptions.handler import (
     exception_handler,
     http_exception_handler,
 )
+from .middlewares.security_headers import SecurityHeadersMiddleware
 from .middlewares.set_timezone import SetTimezoneMiddleware
 from .routes import router
 
@@ -75,6 +76,7 @@ app.add_middleware(
 )
 app.add_middleware(SetTimezoneMiddleware)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 
 add_pagination(app)
