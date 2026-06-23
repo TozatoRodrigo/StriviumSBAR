@@ -1,3 +1,4 @@
+from .audit_log import AuditLog
 from .hospitalization import Hospitalization
 from .hospitalization_action import HospitalizationAction
 from .hospitalization_action_attachment import HospitalizationActionAttachment
@@ -15,6 +16,7 @@ from .tenant_user_invite import TenantUserInvite
 from .user import User
 
 __all__ = [
+    "AuditLog",
     "Hospitalization",
     "HospitalizationAction",
     "HospitalizationActionAttachment",

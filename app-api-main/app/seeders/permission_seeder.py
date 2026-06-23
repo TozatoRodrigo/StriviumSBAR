@@ -1,3 +1,4 @@
+from app.enums.models.audit_enums import AuditLogPermissionsEnum
 from app.enums.models.permissions_enums import (
     DoctorPermissionsEnum,
     HospitalizationPermissionsEnum,
@@ -116,6 +117,12 @@ class PermissionSeeder(Seeder):
                 code=DoctorPermissionsEnum.DELETE.value,
                 name="Deletar médicos",
                 description="Permite deletar médicos",
+            ),
+            # Audit Log
+            Permission(
+                code=AuditLogPermissionsEnum.READ.value,
+                name="Consultar logs de auditoria",
+                description="Permite consultar os logs de auditoria (LGPD)",
             ),
         ]
         self.session.add_all(permissions)
