@@ -36,6 +36,11 @@ class Environment(BaseSettings):
     SECURITY_REFERRER_POLICY: str = "no-referrer"
     SECURITY_FRAME_OPTIONS: str = "DENY"
 
+    # Audit logging (LGPD Art. 46/48). Retention defaults to 180 days (~6 months),
+    # the minimum recommended for traceability of access to personal data.
+    AUDIT_LOG_ENABLED: bool = True
+    AUDIT_LOG_RETENTION_DAYS: int = 180
+
     DB_DRIVER: str = "postgresql"
     DB_HOST: str = "localhost"
     DB_PORT: int = 5432

@@ -1,5 +1,6 @@
 from sqlmodel import select
 
+from app.enums.models.audit_enums import AuditLogPermissionsEnum
 from app.enums.models.permissions_enums import (
     DoctorPermissionsEnum,
     HospitalizationPermissionsEnum,
@@ -61,6 +62,7 @@ class RolePermissionSeeder(Seeder):
             DoctorPermissionsEnum.READ.value,
             DoctorPermissionsEnum.UPDATE.value,
             DoctorPermissionsEnum.DELETE.value,
+            AuditLogPermissionsEnum.READ.value,
         ]
         return self.session.exec(
             select(Permission).where(Permission.code.in_(permissions_codes))

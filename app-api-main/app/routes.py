@@ -57,3 +57,8 @@ if not envs.APP_MODULE or envs.APP_MODULE == "doctor":
     from .modules.doctor.routes import router as doctor_router
 
     router.include_router(doctor_router)
+
+if not envs.APP_MODULE or envs.APP_MODULE == "audit":
+    from .modules.audit.routes import router as audit_router
+
+    router.include_router(audit_router)
